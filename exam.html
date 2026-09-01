@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>الاختبار المحاكي | محاكي القدرات</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="exam.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="examBody">
+  <header class="topbar">
+    <div class="brandBlock">
+      <strong>محاكي اختبار القدرات</strong>
+      <small>تجربة تحاكي الاختبار الفعلي</small>
+    </div>
+
+    <div class="topMetric">
+      <span class="metricIcon">◷</span>
+      <div><small>الوقت المتبقي في القسم</small><b id="sectionTimer">10:00</b></div>
+    </div>
+    <div class="topMetric">
+      <span class="metricIcon">◷</span>
+      <div><small>الوقت المتبقي في الاختبار</small><b id="timer">20:00</b></div>
+    </div>
+    <div class="topMetric compact">
+      <span class="metricIcon">▦</span>
+      <div><small>القسم الحالي</small><b id="sectionLabel">—</b></div>
+    </div>
+    <div class="topMetric compact">
+      <span class="metricIcon">▤</span>
+      <div><small>السؤال الحالي</small><b id="topCounter">—</b></div>
+    </div>
+    <button class="endTop" id="endTopBtn" type="button">إنهاء الاختبار ↪</button>
+  </header>
+
+  <div class="toolsbar">
+    <div class="toolsRight">
+      <button id="instructionsBtn" type="button">ⓘ تعليمات الاختبار</button>
+      <span class="sep"></span>
+      <button id="showAllBtn" type="button">⚑ عرض جميع الأسئلة</button>
+    </div>
+    <div class="fontTools" aria-label="حجم الخط">
+      <button type="button" data-font="up">A+</button>
+      <button type="button" data-font="reset">A</button>
+      <button type="button" data-font="down">A-</button>
+    </div>
+  </div>
+
+  <div id="timeWarning" class="timeWarning" hidden></div>
+
+  <main class="examShell">
+    <aside class="navigator" id="navigator">
+      <h2>الأسئلة</h2>
+      <div class="sectionTabs">
+        <button type="button" id="quantTab">القسم الكمي (<span id="quantCount">0</span>)</button>
+        <button type="button" id="verbalTab">القسم اللفظي (<span id="verbalCount">0</span>)</button>
+      </div>
+      <div class="questionGrid" id="dots"></div>
+      <div class="legend">
+        <span><i class="lg empty"></i> لم تتم الإجابة عليه</span>
+        <span><i class="lg answered"></i> تمت الإجابة عليه</span>
+        <span><i class="bookmarkMini"></i> محدد للمراجعة</span>
+      </div>
+      <button class="allQuestions" id="allQuestionsBtn" type="button">▦ عرض جميع الأسئلة</button>
+    </aside>
+
+    <section class="questionPanel">
+      <div class="questionStrip">
+        <b id="panelSection">القسم</b>
+        <strong id="counter">السؤال —</strong>
+      </div>
+      <div class="questionTools">
+        <div></div>
+        <div class="fontTools inline">
+          <button type="button" data-font="up">A+</button>
+          <button type="button" data-font="reset">A</button>
+          <button type="button" data-font="down">A-</button>
+        </div>
+      </div>
+
+      <div class="questionContent" id="questionContent">
+        <h1 class="questionText" id="questionText">جاري تحميل الأسئلة...</h1>
+        <div class="answers" id="answers"></div>
+        <div id="status" class="status"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bottomBar">
+    <div class="bottomTools">
+      <button id="calculatorBtn" type="button">▦ الآلة الحاسبة</button>
+      <button id="flagBtn" type="button">⚑ تحديد للمراجعة</button>
+    </div>
+    <div class="questionActions">
+      <button class="prev" id="prevBtn" type="button">← السابق</button>
+      <button class="next" id="nextBtn" type="button">حفظ والتالي →</button>
+    </div>
+  </footer>
+
+  <div class="modal" id="instructionsModal" hidden>
+    <div class="modalCard">
+      <button class="modalClose" data-close="instructionsModal">×</button>
+      <h2>تعليمات الاختبار</h2>
+      <p>اختر إجابة واحدة لكل سؤال، ويمكنك تحديد أي سؤال للمراجعة والعودة إليه من قائمة الأسئلة. لا تظهر صحة الإجابة أثناء الاختبار.</p>
+      <button class="modalPrimary" data-close="instructionsModal">متابعة الاختبار</button>
+    </div>
+  </div>
+
+  <div class="modal" id="calculatorModal" hidden>
+    <div class="modalCard calculatorCard">
+      <button class="modalClose" data-close="calculatorModal">×</button>
+      <h2>الآلة الحاسبة</h2>
+      <input id="calcDisplay" class="calcDisplay" value="" readonly>
+      <div class="calcGrid" id="calcGrid">
+        <button>C</button><button>÷</button><button>×</button><button>⌫</button>
+        <button>7</button><button>8</button><button>9</button><button>-</button>
+        <button>4</button><button>5</button><button>6</button><button>+</button>
+        <button>1</button><button>2</button><button>3</button><button>=</button>
+        <button>0</button><button>.</button><button>(</button><button>)</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal" id="sectionModal" hidden>
+    <div class="modalCard sectionEndCard">
+      <h2 id="sectionModalTitle">انتهاء القسم</h2>
+      <p id="sectionModalText"></p>
+      <div class="sectionModalActions">
+        <button class="modalSecondary" id="staySectionBtn" type="button">العودة للمراجعة</button>
+        <button class="modalPrimary" id="moveSectionBtn" type="button">الانتقال للقسم التالي</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="supabase-config.js"></script>
+  <script src="exam.js"></script>
+</body>
+</html>
