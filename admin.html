@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>لوحة المالك | محاكي القدرات</title>
+  <link rel="stylesheet" href="admin.css?v=1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <section class="authScreen" id="authScreen">
+    <div class="authCard">
+      <a class="backLink" href="index.html">← العودة للمحاكي</a>
+      <div class="ownerMark">ب</div>
+      <p class="eyebrow">منطقة خاصة</p>
+      <h1>دخول مالك المحاكي</h1>
+      <p class="muted">سجّل الدخول لإدارة الأسئلة ومتابعة نتائج المحاولات.</p>
+      <form id="loginForm">
+        <label>البريد الإلكتروني<input id="email" type="email" autocomplete="username" required></label>
+        <label>كلمة المرور<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button class="primary wide" type="submit">تسجيل الدخول</button>
+      </form>
+      <button class="textButton" id="firstAccountBtn" type="button">إنشاء حساب المالك لأول مرة</button>
+      <p class="formMessage" id="authMessage" role="status"></p>
+    </div>
+  </section>
+
+  <div class="app" id="app" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><span>ب</span><div><b>لوحة المالك</b><small>محاكي القدرات</small></div></div>
+      <nav>
+        <button class="navItem active" data-view="dashboard">نظرة عامة</button>
+        <button class="navItem" data-view="questions">بنك الأسئلة</button>
+        <button class="navItem" data-view="results">نتائج الطلاب</button>
+      </nav>
+      <a class="studentLink" href="index.html">فتح واجهة الطالب ↗</a>
+      <button class="logout" id="logoutBtn">تسجيل الخروج</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="menuButton" id="menuButton" aria-label="فتح القائمة">☰</button>
+        <div><h1 id="viewTitle">نظرة عامة</h1><p id="today"></p></div>
+        <div class="ownerBadge"><span>المالك</span><b id="ownerEmail"></b></div>
+      </header>
+
+      <section class="view active" id="dashboardView">
+        <div class="statsGrid">
+          <article class="statCard blue"><span>إجمالي الأسئلة</span><b id="statQuestions">—</b><small id="statQuestionNote">في بنك الأسئلة</small></article>
+          <article class="statCard green"><span>الأسئلة المنشورة</span><b id="statPublished">—</b><small>متاحة للطلاب</small></article>
+          <article class="statCard violet"><span>المحاولات المكتملة</span><b id="statAttempts">—</b><small id="statAttemptNote">من جميع الطلاب</small></article>
+          <article class="statCard amber"><span>متوسط النتائج</span><b id="statAverage">—</b><small>للمحاولات المكتملة</small></article>
+        </div>
+        <div class="dashboardGrid">
+          <article class="panel">
+            <div class="panelHead"><div><h2>حالة بنك الأسئلة</h2><p>جاهزية المحتوى للاختبارات</p></div><button class="secondary" data-open-view="questions">إدارة البنك</button></div>
+            <div class="bankProgress"><div><span>منشورة</span><b id="publishedLabel">—</b></div><progress id="publishedProgress" max="100" value="0"></progress></div>
+            <div class="miniStats"><div><b id="draftCount">—</b><span>مسودة</span></div><div><b id="userCount">—</b><span>مستخدم</span></div><div><b id="allAttemptCount">—</b><span>محاولة</span></div></div>
+          </article>
+          <article class="panel quickPanel">
+            <h2>إجراءات سريعة</h2><p>أكثر العمليات استخدامًا</p>
+            <button class="quickAction" id="quickAddQuestion"><span>＋</span><div><b>إضافة سؤال جديد</b><small>كمي أو لفظي مع الشرح</small></div></button>
+            <button class="quickAction" data-open-view="results"><span>↗</span><div><b>عرض النتائج</b><small>متابعة أداء الطلاب</small></div></button>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="questionsView">
+        <div class="panel tablePanel">
+          <div class="panelHead stackMobile"><div><h2>بنك الأسئلة</h2><p>إضافة الأسئلة وتعديل الإجابات والشروحات</p></div><button class="primary" id="addQuestionBtn">＋ إضافة سؤال</button></div>
+          <div class="filters">
+            <input id="questionSearch" type="search" placeholder="ابحث في نص السؤال...">
+            <select id="sectionFilter"><option value="">كل الأقسام</option><option value="quantitative">كمي</option><option value="verbal">لفظي</option></select>
+            <select id="statusFilter"><option value="">كل الحالات</option><option value="published">منشور</option><option value="draft">مسودة</option><option value="archived">مؤرشف</option></select>
+          </div>
+          <div class="tableWrap"><table><thead><tr><th>السؤال</th><th>القسم</th><th>المهارة</th><th>الصعوبة</th><th>الحالة</th><th></th></tr></thead><tbody id="questionsTable"></tbody></table></div>
+          <div class="empty" id="questionsEmpty" hidden>لا توجد أسئلة مطابقة.</div>
+          <div class="pagination"><button class="secondary" id="prevPage">السابق</button><span id="pageLabel"></span><button class="secondary" id="nextPage">التالي</button></div>
+        </div>
+      </section>
+
+      <section class="view" id="resultsView">
+        <div class="panel tablePanel">
+          <div class="panelHead"><div><h2>نتائج الطلاب</h2><p>آخر المحاولات المسجلة في المحاكي</p></div><button class="secondary" id="refreshResults">تحديث</button></div>
+          <div class="tableWrap"><table><thead><tr><th>التاريخ</th><th>نوع الاختبار</th><th>النتيجة</th><th>كمي</th><th>لفظي</th><th>الحالة</th></tr></thead><tbody id="resultsTable"></tbody></table></div>
+          <div class="empty" id="resultsEmpty" hidden>لا توجد محاولات حتى الآن.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="questionDialog">
+    <form method="dialog" id="questionForm">
+      <div class="dialogHead"><div><p class="eyebrow">بنك الأسئلة</p><h2 id="dialogTitle">إضافة سؤال</h2></div><button class="iconButton" value="cancel" type="button" id="closeDialog">×</button></div>
+      <input id="questionId" type="hidden">
+      <div class="formGrid">
+        <label class="full">نص السؤال<textarea id="questionText" rows="3" required></textarea></label>
+        <label>القسم<select id="questionSection" required><option value="quantitative">كمي</option><option value="verbal">لفظي</option></select></label>
+        <label>المهارة<select id="questionSkill" required></select></label>
+        <label>الصعوبة<select id="questionDifficulty"><option value="easy">سهل</option><option value="medium">متوسط</option><option value="hard">صعب</option></select></label>
+        <label>الحالة<select id="questionStatus"><option value="published">منشور</option><option value="draft">مسودة</option><option value="archived">مؤرشف</option></select></label>
+      </div>
+      <fieldset><legend>الخيارات والإجابة الصحيحة</legend><div class="choicesGrid" id="choicesGrid"></div></fieldset>
+      <label>شرح الحل<textarea id="questionExplanation" rows="3" required></textarea></label>
+      <p class="formMessage" id="questionMessage" role="status"></p>
+      <div class="dialogActions"><button class="secondary" type="button" id="cancelQuestion">إلغاء</button><button class="primary" type="submit" id="saveQuestion">حفظ السؤال</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js?v=1"></script>
+</body>
+</html>
+
