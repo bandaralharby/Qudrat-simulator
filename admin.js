@@ -6,6 +6,7 @@ let skills=[],questions=[],questionPage=0;const pageSize=20;
 
 document.addEventListener('DOMContentLoaded',init);
 async function init(){
+  document.body.classList.remove('authenticated');
   $('today').textContent=new Intl.DateTimeFormat('ar-SA',{dateStyle:'full'}).format(new Date());
   bindEvents();
   const {data:{session}}=await db.auth.getSession();
@@ -31,7 +32,7 @@ function bindEvents(){
   $('refreshResults').onclick=loadResults;
 }
 
-function showAuth(){$('authScreen').hidden=false;$('app').hidden=true}
+function showAuth(){document.body.classList.remove('authenticated');$('authScreen').hidden=false;$('app').hidden=true}
 async function login(e){
   e.preventDefault();setMessage('authMessage','جارٍ تسجيل الدخول...');
   const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
@@ -42,14 +43,15 @@ async function createFirstAccount(){
   const email=$('email').value.trim(),password=$('password').value;
   if(!email||password.length<8)return setMessage('authMessage','أدخل البريد وكلمة مرور لا تقل عن 8 أحرف.');
   setMessage('authMessage','جارٍ إنشاء الحساب...');
-  const {data,error}=await db.auth.signUp({email,password});
+  const redirectTo=new URL('admin.html',location.href).href;
+  const {data,error}=await db.auth.signUp({email,password,options:{emailRedirectTo:redirectTo}});
   if(error)return setMessage('authMessage',friendlyAuthError(error.message));
   if(data.session)await enterDashboard(data.session);else setMessage('authMessage','تم إنشاء الحساب. افتح رسالة التأكيد في بريدك ثم سجّل الدخول.',true);
 }
 async function enterDashboard(session){
   const {data,error}=await db.rpc('owner_dashboard_summary');
   if(error||!data){await db.auth.signOut();showAuth();return setMessage('authMessage','هذا الحساب غير مخوّل للدخول إلى لوحة المالك.');}
-  $('authScreen').hidden=true;$('app').hidden=false;$('ownerEmail').textContent=session.user.email||'حساب المالك';
+  document.body.classList.add('authenticated');$('authScreen').hidden=true;$('app').hidden=false;$('ownerEmail').textContent=session.user.email||'حساب المالك';
   paintSummary(data);
   await Promise.all([loadSkills(),loadQuestions(),loadResults()]);
 }
@@ -126,4 +128,3 @@ function examTypeLabel(v){return({mock:'محاكاة كاملة',placement:'تح
 function formatDate(v){return new Intl.DateTimeFormat('ar-SA',{dateStyle:'medium',timeStyle:'short'}).format(new Date(v))}
 function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').classList.remove('show'),2800)}
 function debounce(fn,delay){let t;return(...args)=>{clearTimeout(t);t=setTimeout(()=>fn(...args),delay)}}
-
