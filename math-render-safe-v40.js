@@ -1,4 +1,4 @@
-// Qudrat v48 — Arabic math direction, digits, superscripts, fractions, roots, shapes and charts.
+// Qudrat v49 — robust Arabic math + inferred geometry diagrams.
 (function(){
  const DIG='٠١٢٣٤٥٦٧٨٩';
  const ar=s=>String(s??'').replace(/[0-9]/g,d=>DIG[d]);
@@ -11,18 +11,33 @@
   if(type==='square'){const[d='']=args;return '<div class="qvisual" dir="ltr"><svg viewBox="0 0 300 195"><rect x="65" y="20" width="170" height="150" class="qstroke"/>'+tx(150,190,d)+'</svg></div>'}return'';
  }
  function bars(spec){const items=String(spec).split(',').map(x=>x.split('=')).map(([l,v])=>[l,Number(v)]).filter(x=>x[0]&&Number.isFinite(x[1]));if(!items.length)return'';const max=Math.max(1,...items.map(x=>x[1]));return '<div class="qchart" dir="rtl">'+items.map(([l,v])=>'<div class="qbarRow"><span>'+esc(l)+'</span><i style="--w:'+(v/max*100)+'%"></i><b>'+ar(v)+'</b></div>').join('')+'</div>'}
- function render(raw){let s=esc(raw);
-  s=s.replace(/\{\{shape:(triangle|rect|circle|square)(?::([^}]+))?\}\}/g,(_,t,a)=>shape(t,a?a.split(':'):[]));
-  s=s.replace(/\{\{chart:bar:([^}]+)\}\}/g,(_,x)=>bars(x));
+ function inferShape(raw){
+  if(/في الشكل/.test(raw)&&/مثلث قائم/.test(raw)){const m=raw.match(/أضلاعه\s*([٠-٩0-9]+)\s*[،,]\s*([٠-٩0-9]+)\s*[،,]\s*([٠-٩0-9]+)/);return shape('triangle',m?[m[1],m[2],m[3]]:[])}
+  if(/في الشكل/.test(raw)&&/مثلث/.test(raw))return shape('triangle',[]);
+  if(/في الشكل/.test(raw)&&/مستطيل/.test(raw))return shape('rect',[]);
+  if(/في الشكل/.test(raw)&&/دائرة/.test(raw))return shape('circle',[]);
+  if(/في الشكل/.test(raw)&&/مربع/.test(raw))return shape('square',[]);
+  return '';
+ }
+ function render(raw){const original=String(raw??'');let s=esc(original);
+  let hadVisual=false;
+  s=s.replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/g,(_,t,a)=>{hadVisual=true;return shape(t==='rectangle'?'rect':t,a?a.split(':'):[])});
+  s=s.replace(/\{\{chart:bar:([^}]+)\}\}/g,(_,x)=>{hadVisual=true;return bars(x)});
   s=s.replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>'<span class="qfrac" dir="ltr"><span>'+ar(a)+'</span><span>'+ar(b)+'</span></span>');
   s=s.replace(/\{\{sqrt:([^}]+)\}\}/g,(_,x)=>'<span class="qsqrt" dir="ltr">√<span>'+ar(x)+'</span></span>');
   s=s.replace(/\{\{pow:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>'<span class="qpow" dir="ltr">'+ar(a)+'<sup>'+ar(b)+'</sup></span>');
   s=s.replace(/\[frac:([^\]\/]+)\/([^\]]+)\]/g,(_,a,b)=>'<span class="qfrac" dir="ltr"><span>'+ar(a)+'</span><span>'+ar(b)+'</span></span>');
   s=s.replace(/\[sqrt:([^\]]+)\]/g,(_,x)=>'<span class="qsqrt" dir="ltr">√<span>'+ar(x)+'</span></span>');
-  s=s.replace(/([\u0600-\u06FF\w\)]+)\^([0-9]+)/g,(_,a,b)=>'<span class="qpow" dir="ltr">'+ar(a)+'<sup>'+ar(b)+'</sup></span>');
+  // Raw square-root forms: √س, √١٠, √(س+٩). Keep the whole expression isolated.
+  s=s.replace(/√\s*([\u0600-\u06FF0-9٠-٩]+|\([^)]*\))/g,(_,x)=>'<span class="qsqrt" dir="ltr">√<span>'+ar(x)+'</span></span>');
+  s=s.replace(/([\u0600-\u06FF\w\)]+)\^([0-9٠-٩]+)/g,(_,a,b)=>'<span class="qpow" dir="ltr">'+ar(a)+'<sup>'+ar(b)+'</sup></span>');
   s=s.replace(/([\u0600-\u06FF\w\)]+)([¹²³⁴⁵⁶⁷⁸⁹⁰]+)/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return '<span class="qpow" dir="ltr">'+ar(a)+'<sup>'+[...b].map(x=>m[x]||x).join('')+'</sup></span>'});
-  // isolate common inline equations so Arabic prose does not reverse variables/operators
-  s=s.replace(/([^،؟.]*[=+−\-×÷|][^،؟.]*)/g,m=>m.includes('<')?m:'<bdi dir="ltr" class="qmathline">'+m+'</bdi>');
-  return ar(s)}
+  // Ratios must keep the written order (e.g. ٥ : ٢), independent of page RTL.
+  s=s.replace(/([0-9٠-٩]+)\s*:\s*([0-9٠-٩]+)/g,(_,a,b)=>'<bdi dir="ltr" class="qmathline">'+ar(a)+' : '+ar(b)+'</bdi>');
+  // Isolate simple equations without swallowing surrounding Arabic prose.
+  s=s.replace(/([√\u0600-\u06FF0-9٠-٩()]+\s*[+−\-×÷]\s*[√\u0600-\u06FF0-9٠-٩()]+\s*=\s*[0-9٠-٩]+)/g,m=>'<bdi dir="ltr" class="qmathline">'+ar(m)+'</bdi>');
+  const inferred=!hadVisual?inferShape(original):'';
+  return (inferred?inferred:s.startsWith('<div class="qvisual"')?'':inferred)+ar(s)
+ }
  window.QudratMath={render,ar};
 })();
