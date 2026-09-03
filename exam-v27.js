@@ -21,11 +21,19 @@ async function start(){
     const free=params.get('free')==='1';
     const requestedTotal=Number(params.get('total')||(free?10:20));
     const expectedTotal=Math.max(2,Math.min(120,Number.isFinite(requestedTotal)?requestedTotal:20));
+    // V27: امسح أي جلسة قديمة من الإصدارات السابقة نهائيًا.
+    for(let i=localStorage.length-1;i>=0;i--){
+      const k=localStorage.key(i);
+      if(k && k.startsWith('qudrat_active_session_') && k!=='qudrat_active_session_v27') localStorage.removeItem(k);
+    }
+    // عند الدخول من الصفحة الرئيسية نبدأ محاولة جديدة ولا نعيد اختبارًا قديمًا.
+    if(params.get('fresh')==='1') localStorage.removeItem('qudrat_active_session_v27');
+
     // استعادة المحاولة فقط إذا كانت من نفس نسخة الاختبار ونفس عدد الأسئلة.
     // أي جلسة قديمة (مثل اختبار 90 سؤالًا) تُلغى حتى لا تظهر بعد التحديث.
     try{
-      const saved=JSON.parse(localStorage.getItem('qudrat_active_session_v26')||'null');
-      if(saved?.attemptId && saved?.sessionVersion===26 && Array.isArray(saved.questions) && saved.questions.length===expectedTotal){
+      const saved=JSON.parse(localStorage.getItem('qudrat_active_session_v27')||'null');
+      if(saved?.attemptId && saved?.sessionVersion===27 && Array.isArray(saved.questions) && saved.questions.length===expectedTotal){
         attemptId=saved.attemptId; questions=saved.questions; current=Number(saved.current)||0;
         answers=saved.answers||{}; flags=saved.flags||{}; sectionIndex=Number(saved.sectionIndex)||0; devQuick=!!saved.devQuick;
         // نعتمد على وقت نهاية ثابت، لذلك يستمر العد حتى لو غادر الطالب الصفحة أو أغلقها.
@@ -40,8 +48,8 @@ async function start(){
         startTimer(); $('status').textContent='تمت استعادة الاختبار والوقت مستمر منذ مغادرة الصفحة';
         return;
       }
-      localStorage.removeItem('qudrat_active_session_v26');
-    }catch{ localStorage.removeItem('qudrat_active_session_v26'); }
+      localStorage.removeItem('qudrat_active_session_v27');
+    }catch{ localStorage.removeItem('qudrat_active_session_v27'); }
     // تنظيف مفاتيح الجلسات القديمة نهائيًا.
     localStorage.removeItem('qudrat_active_session_v10');
     localStorage.removeItem('qudrat_active_session_v25');
@@ -55,7 +63,11 @@ async function start(){
     const {data,error}=await db.rpc('start_exam',{p_exam_type:examType,p_total:total});
     if(error)throw error;
     attemptId=data.attempt_id;
-    const raw=data.questions||[]; const quant=raw.filter(q=>q.section==='quantitative').slice(0,48), verbal=raw.filter(q=>q.section==='verbal').slice(0,48); questions=total===96?[...quant.slice(0,24),...verbal.slice(0,24),...quant.slice(24),...verbal.slice(24)]:raw;
+    const raw=data.questions||[];
+    if(raw.length!==total) throw new Error(`عدد الأسئلة المستلم ${raw.length} بدل ${total}. لن يتم تشغيل اختبار ناقص.`);
+    const quant=raw.filter(q=>q.section==='quantitative'), verbal=raw.filter(q=>q.section==='verbal');
+    questions=total===96?[...quant.slice(0,24),...verbal.slice(0,24),...quant.slice(24),...verbal.slice(24)]:raw;
+    if(total===96 && questions.length!==96) throw new Error('تعذر تجهيز 96 سؤالًا كاملة.');
     questions.forEach(q=>{answers[q.id]=null;flags[q.id]=false});
     activeSection=questions[0]?.section||'quantitative';
     localStorage.removeItem('qudrat_result');
@@ -161,14 +173,36 @@ $('calcGrid').addEventListener('click',e=>{
 
 async function finish(){
   if(finishing)return;
-  finishing=true;clearInterval(timerRef);document.body.classList.add('loading');$('status').textContent='جارٍ تصحيح الاختبار...';
+  finishing=true;
+  clearInterval(timerRef);
+  // الإنهاء محليًا فورًا: لا تسمح باستعادة الاختبار بعد ضغط الزر حتى لو تأخر الاتصال.
+  clearSession();
+  document.body.classList.add('loading');
+  $('status').textContent='جارٍ إنهاء الاختبار وإظهار النتيجة...';
+  const rpcFinish=()=>db.rpc('finish_exam',{p_attempt_id:attemptId});
+  const withTimeout=(promise,ms)=>Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('انتهت مهلة الاتصال')),ms))
+  ]);
   try{
-    const {data,error}=await db.rpc('finish_exam',{p_attempt_id:attemptId});
-    if(error)throw error;
-    clearSession();localStorage.setItem('qudrat_result',JSON.stringify(data));location.href='results.html';
-  }catch(e){
-    console.error(e);finishing=false;document.body.classList.remove('loading');
-    $('status').textContent='تعذر إنهاء الاختبار: '+(e?.message||'تحقق من الاتصال ثم حاول مرة أخرى');
+    let response=await withTimeout(rpcFinish(),12000);
+    if(response.error) throw response.error;
+    localStorage.setItem('qudrat_result',JSON.stringify(response.data));
+    location.replace('results.html?v=27');
+  }catch(firstError){
+    console.error(firstError);
+    try{
+      const response=await withTimeout(rpcFinish(),12000);
+      if(response.error) throw response.error;
+      localStorage.setItem('qudrat_result',JSON.stringify(response.data));
+      location.replace('results.html?v=27');
+    }catch(e){
+      console.error(e);
+      // لا نعيد الاختبار المنتهي. نعطي المستخدم خيار إعادة محاولة جلب النتيجة فقط.
+      finishing=false;
+      document.body.classList.remove('loading');
+      $('status').textContent='تم إيقاف الاختبار، لكن تعذر جلب النتيجة. اضغط إنهاء الاختبار لإعادة محاولة جلبها.';
+    }
   }
 }
 
@@ -258,10 +292,10 @@ startTimer=function(){
 };
 
 // حماية جلسة الاختبار من التحديث أو الإغلاق العرضي.
-const SESSION_KEY='qudrat_active_session_v26';
+const SESSION_KEY='qudrat_active_session_v27';
 function persistSession(){
   if(!attemptId||!questions.length)return;
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({sessionVersion:26,attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,totalDeadline,sectionDeadline,ts:Date.now()}))}catch{}
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({sessionVersion:27,attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,totalDeadline,sectionDeadline,ts:Date.now()}))}catch{}
 }
 function clearSession(){try{localStorage.removeItem(SESSION_KEY)}catch{}}
 window.addEventListener('beforeunload',e=>{if(attemptId&&!finishing){persistSession();e.preventDefault();e.returnValue=''}});
