@@ -12,3 +12,6 @@ button{font:inherit;cursor:pointer}.topbar{min-height:96px;background:#173866;co
 .timeWarning{position:fixed;z-index:75;top:106px;left:50%;transform:translateX(-50%);background:#fff7e6;border:1px solid #f0a43b;color:#7a4600;border-radius:8px;padding:10px 20px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.12)}
 .timeWarning.urgent{background:#fff0f0;border-color:#d92d20;color:#9b1c13}.sectionEndCard{text-align:center}.sectionModalActions{display:flex;gap:12px;justify-content:center;margin-top:18px}.modalSecondary{border:1px solid #9fb3c8;background:#fff;color:#173866;border-radius:6px;padding:10px 20px;font-weight:700}.timerPulse{animation:timerPulse 1s ease-in-out infinite}@keyframes timerPulse{50%{opacity:.45}}
 @media(max-width:760px){.timeWarning{top:82px;width:calc(100% - 24px);text-align:center;font-size:14px}}
+
+.endBottom{background:#b42318!important;color:#fff!important;border:1px solid #b42318!important;min-width:190px}
+@media(max-width:760px){.questionActions{display:grid!important;grid-template-columns:1fr 1fr 1.25fr}.endBottom{display:block!important;min-width:0!important}.prev,.next{min-width:0!important}}
