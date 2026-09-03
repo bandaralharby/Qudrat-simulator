@@ -1,29 +1,27 @@
-// Qudrat v54 — reliable geometry/chart rendering with private-use placeholders.
+// Qudrat v55 — direct visual-token renderer.
 (function(){
- const DIG='٠١٢٣٤٥٦٧٨٩';
- const ar=s=>String(s??'').replace(/[0-9]/g,d=>DIG[d]);
+ const D='٠١٢٣٤٥٦٧٨٩', ar=s=>String(s??'').replace(/[0-9]/g,d=>D[d]);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const tx=(x,y,t)=>'<text x="'+x+'" y="'+y+'" text-anchor="middle" class="qlabel">'+esc(ar(t))+'</text>';
- function shape(type,args=[]){
-  if(type==='triangle'){const[a='',b='',c='']=args;return'<div class="qvisual" dir="ltr"><svg viewBox="0 0 300 195"><polygon points="150,25 45,155 255,155" class="qstroke"/>'+tx(150,183,b)+tx(72,88,a)+tx(226,88,c)+'</svg></div>'}
-  if(type==='rect'){const[w='',h='']=args;return'<div class="qvisual" dir="ltr"><svg viewBox="0 0 300 195"><rect x="48" y="35" width="204" height="115" class="qstroke"/>'+tx(150,180,w)+tx(25,98,h)+'</svg></div>'}
-  if(type==='circle'){const[r='']=args;return'<div class="qvisual" dir="ltr"><svg viewBox="0 0 300 195"><circle cx="150" cy="95" r="68" class="qstroke"/><circle cx="150" cy="95" r="3" class="qfill"/><line x1="150" y1="95" x2="218" y2="95" class="qstroke"/>'+tx(184,82,r?r+' سم':'')+'</svg></div>'}
-  if(type==='square'){const[d='']=args;return'<div class="qvisual" dir="ltr"><svg viewBox="0 0 300 195"><rect x="65" y="20" width="170" height="150" class="qstroke"/>'+tx(150,190,d)+'</svg></div>'}
+ const label=(x,y,t)=>`<text x="${x}" y="${y}" text-anchor="middle" class="qlabel">${esc(ar(t))}</text>`;
+ function svg(type,a=[]){
+  if(type==='triangle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><polygon points="150,20 45,155 255,155" class="qstroke"/>${label(70,95,a[0]||'')}${label(150,180,a[1]||'')}${label(230,95,a[2]||'')}</svg></div>`;
+  if(type==='rect'||type==='rectangle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><rect x="45" y="30" width="210" height="120" class="qstroke"/>${label(150,180,a[0]||'')}${label(24,95,a[1]||'')}</svg></div>`;
+  if(type==='square')return `<div class="qvisual"><svg viewBox="0 0 300 190"><rect x="70" y="15" width="160" height="160" class="qstroke"/>${label(150,188,a[0]||'')}</svg></div>`;
+  if(type==='circle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><circle cx="150" cy="92" r="70" class="qstroke"/><circle cx="150" cy="92" r="3" class="qfill"/><line x1="150" y1="92" x2="220" y2="92" class="qstroke"/>${label(185,80,a[0]||'')}</svg></div>`;
   return'';
  }
- function bars(spec){const items=String(spec).split(',').map(x=>x.split('=')).map(([l,v])=>[l,Number(v)]).filter(x=>x[0]&&Number.isFinite(x[1]));if(!items.length)return'';const max=Math.max(1,...items.map(x=>x[1]));return'<div class="qchart" dir="rtl">'+items.map(([l,v])=>'<div class="qbarRow"><span>'+esc(l)+'</span><i style="--w:'+(v/max*100)+'%"></i><b>'+ar(v)+'</b></div>').join('')+'</div>'}
+ function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')), vals=z.map(x=>Number(x[1])||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
  function render(raw){
-  const visuals=[];
-  let p=String(raw??'').replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>{const n=visuals.length;visuals.push(shape(t.toLowerCase()==='rectangle'?'rect':t.toLowerCase(),a?a.split(':'):[]));return String.fromCharCode(0xE000+n)}).replace(/\{\{chart:bar:([^}]+)\}\}/gi,(_,x)=>{const n=visuals.length;visuals.push(bars(x));return String.fromCharCode(0xE000+n)});
-  let s=esc(p);
-  s=s.replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>'<span class="qfrac" dir="ltr"><span>'+ar(a)+'</span><span>'+ar(b)+'</span></span>')
-   .replace(/\{\{sqrt:([^}]+)\}\}/g,(_,x)=>'<span class="qsqrt" dir="ltr">√<span>'+ar(x)+'</span></span>')
-   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>'<span class="qpow" dir="ltr">'+ar(a)+'<sup>'+ar(b)+'</sup></span>')
-   .replace(/\[frac:([^\]\/]+)\/([^\]]+)\]/g,(_,a,b)=>'<span class="qfrac" dir="ltr"><span>'+ar(a)+'</span><span>'+ar(b)+'</span></span>')
-   .replace(/\[sqrt:([^\]]+)\]/g,(_,x)=>'<span class="qsqrt" dir="ltr">√<span>'+ar(x)+'</span></span>');
-  s=ar(s);
-  visuals.forEach((html,i)=>{s=s.split(String.fromCharCode(0xE000+i)).join(html)});
-  return s;
+  let s=String(raw??''); const visuals=[];
+  const hold=h=>{let i=visuals.push(h)-1;return `@@VIS${i}@@`};
+  s=s.replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a? a.split(':'):[])))
+     .replace(/\{\{chart:bar:([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
+     .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])));
+  s=esc(s)
+   .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>`<span class="qfrac"><span>${ar(a)}</span><span>${ar(b)}</span></span>`)
+   .replace(/\{\{sqrt:([^}]+)\}\}/g,(_,x)=>`<span class="qsqrt">√<span>${ar(x)}</span></span>`)
+   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>`<span class="qpow">${ar(a)}<sup>${ar(b)}</sup></span>`);
+  s=ar(s); visuals.forEach((h,i)=>{s=s.split(`@@VIS${ar(i)}@@`).join(h).split(`@@VIS${i}@@`).join(h)}); return s;
  }
  window.QudratMath={render,ar};
 })();
