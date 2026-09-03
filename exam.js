@@ -16,10 +16,16 @@ async function start(){
   document.body.classList.add('loading');
   try{
     await ensureAuth();
-    // استعادة المحاولة بعد تحديث الصفحة إن كانت ما زالت موجودة.
+    const params=new URLSearchParams(location.search);
+    devQuick=params.get('mode')==='devquick';
+    const free=params.get('free')==='1';
+    const requestedTotal=Number(params.get('total')||(free?10:20));
+    const expectedTotal=Math.max(2,Math.min(120,Number.isFinite(requestedTotal)?requestedTotal:20));
+    // استعادة المحاولة فقط إذا كانت من نفس نسخة الاختبار ونفس عدد الأسئلة.
+    // أي جلسة قديمة (مثل اختبار 90 سؤالًا) تُلغى حتى لا تظهر بعد التحديث.
     try{
-      const saved=JSON.parse(localStorage.getItem('qudrat_active_session_v10')||'null');
-      if(saved?.attemptId && Array.isArray(saved.questions) && saved.questions.length){
+      const saved=JSON.parse(localStorage.getItem('qudrat_active_session_v25')||'null');
+      if(saved?.attemptId && saved?.sessionVersion===25 && Array.isArray(saved.questions) && saved.questions.length===expectedTotal){
         attemptId=saved.attemptId; questions=saved.questions; current=Number(saved.current)||0;
         answers=saved.answers||{}; flags=saved.flags||{}; sectionIndex=Number(saved.sectionIndex)||0; devQuick=!!saved.devQuick;
         // نعتمد على وقت نهاية ثابت، لذلك يستمر العد حتى لو غادر الطالب الصفحة أو أغلقها.
@@ -34,11 +40,11 @@ async function start(){
         startTimer(); $('status').textContent='تمت استعادة الاختبار والوقت مستمر منذ مغادرة الصفحة';
         return;
       }
-    }catch{ localStorage.removeItem('qudrat_active_session_v10'); }
-    const params=new URLSearchParams(location.search); devQuick=params.get('mode')==='devquick';
-    const free=params.get('free')==='1';
-    const requestedTotal=Number(params.get('total')||(free?10:20));
-    const total=Math.max(2,Math.min(120,Number.isFinite(requestedTotal)?requestedTotal:20));
+      localStorage.removeItem('qudrat_active_session_v25');
+    }catch{ localStorage.removeItem('qudrat_active_session_v25'); }
+    // تنظيف مفاتيح الجلسات القديمة نهائيًا.
+    localStorage.removeItem('qudrat_active_session_v10');
+    const total=expectedTotal;
     const requestedMinutes=Number(params.get('minutes')||(free?10:(total===96?100:20)));
     seconds=Math.max(60,Math.round((Number.isFinite(requestedMinutes)?requestedMinutes:20)*60));
     sectionSeconds=total===96?1500:seconds;
@@ -251,10 +257,10 @@ startTimer=function(){
 };
 
 // حماية جلسة الاختبار من التحديث أو الإغلاق العرضي.
-const SESSION_KEY='qudrat_active_session_v10';
+const SESSION_KEY='qudrat_active_session_v25';
 function persistSession(){
   if(!attemptId||!questions.length)return;
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,totalDeadline,sectionDeadline,ts:Date.now()}))}catch{}
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({sessionVersion:25,attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,totalDeadline,sectionDeadline,ts:Date.now()}))}catch{}
 }
 function clearSession(){try{localStorage.removeItem(SESSION_KEY)}catch{}}
 window.addEventListener('beforeunload',e=>{if(attemptId&&!finishing){persistSession();e.preventDefault();e.returnValue=''}});
