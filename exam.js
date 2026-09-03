@@ -1,7 +1,7 @@
 // Qudrat simulator V15 — cleaned build. Legacy shadowed timer/dot implementations removed.
 const {createClient}=supabase;
 const db=createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
-let attemptId=null,questions=[],current=0,answers={},flags={},seconds=6000,sectionSeconds=1500,timerRef=null,finishing=false,fontScale=1,activeSection='quantitative',sectionIndex=0,devQuick=false;
+let attemptId=null,questions=[],current=0,answers={},flags={},seconds=6000,sectionSeconds=1500,timerRef=null,finishing=false,fontScale=1,activeSection='quantitative',sectionIndex=0,devQuick=false,totalDeadline=0,sectionDeadline=0;
 const $=id=>document.getElementById(id);
 
 async function ensureAuth(){
@@ -21,10 +21,17 @@ async function start(){
       const saved=JSON.parse(localStorage.getItem('qudrat_active_session_v10')||'null');
       if(saved?.attemptId && Array.isArray(saved.questions) && saved.questions.length){
         attemptId=saved.attemptId; questions=saved.questions; current=Number(saved.current)||0;
-        answers=saved.answers||{}; flags=saved.flags||{}; seconds=Math.max(1,Number(saved.seconds)||6000);
-        sectionSeconds=Math.max(1,Number(saved.sectionSeconds)||1500); sectionIndex=Number(saved.sectionIndex)||0; devQuick=!!saved.devQuick;
+        answers=saved.answers||{}; flags=saved.flags||{}; sectionIndex=Number(saved.sectionIndex)||0; devQuick=!!saved.devQuick;
+        // نعتمد على وقت نهاية ثابت، لذلك يستمر العد حتى لو غادر الطالب الصفحة أو أغلقها.
+        totalDeadline=Number(saved.totalDeadline)||((Number(saved.ts)||Date.now())+(Number(saved.seconds)||6000)*1000);
+        sectionDeadline=Number(saved.sectionDeadline)||((Number(saved.ts)||Date.now())+(Number(saved.sectionSeconds)||1500)*1000);
+        seconds=Math.max(0,Math.ceil((totalDeadline-Date.now())/1000));
+        sectionSeconds=Math.max(0,Math.ceil((sectionDeadline-Date.now())/1000));
         activeSection=questions[current]?.section||'quantitative';
-        render(); startTimer(); $('status').textContent='تمت استعادة الاختبار من آخر نقطة محفوظة';
+        render();
+        if(seconds<=0){finish();return;}
+        if(simFull() && sectionSeconds<=0){advanceExpiredSections();}
+        startTimer(); $('status').textContent='تمت استعادة الاختبار والوقت مستمر منذ مغادرة الصفحة';
         return;
       }
     }catch{ localStorage.removeItem('qudrat_active_session_v10'); }
@@ -35,6 +42,8 @@ async function start(){
     const requestedMinutes=Number(params.get('minutes')||(free?10:(total===96?100:20)));
     seconds=Math.max(60,Math.round((Number.isFinite(requestedMinutes)?requestedMinutes:20)*60));
     sectionSeconds=total===96?1500:seconds;
+    totalDeadline=Date.now()+seconds*1000;
+    sectionDeadline=Date.now()+sectionSeconds*1000;
     const examType=params.get('type')||((total===96)?'mock':'placement');
     const {data,error}=await db.rpc('start_exam',{p_exam_type:examType,p_total:total});
     if(error)throw error;
@@ -43,7 +52,7 @@ async function start(){
     questions.forEach(q=>{answers[q.id]=null;flags[q.id]=false});
     activeSection=questions[0]?.section||'quantitative';
     localStorage.removeItem('qudrat_result');
-    if(devQuick){sectionIndex=0;sectionSeconds=300;seconds=300;} render(); persistSession(); startTimer();
+    if(devQuick){sectionIndex=0;sectionSeconds=300;seconds=300;totalDeadline=Date.now()+300000;sectionDeadline=totalDeadline;} render(); persistSession(); startTimer();
   }catch(e){
     console.error(e);
     $('questionText').textContent='تعذر بدء الاختبار.';
@@ -144,11 +153,16 @@ $('calcGrid').addEventListener('click',e=>{
 });
 
 async function finish(){
-  if(finishing)return;finishing=true;clearInterval(timerRef);document.body.classList.add('loading');$('status').textContent='جارٍ تصحيح الاختبار...';
-  const {data,error}=await db.rpc('finish_exam',{p_attempt_id:attemptId});
-  document.body.classList.remove('loading');
-  if(error){finishing=false;$('status').textContent='تعذر إنهاء الاختبار: '+error.message;return}
-  clearSession();localStorage.setItem('qudrat_result',JSON.stringify(data));location.href='results.html';
+  if(finishing)return;
+  finishing=true;clearInterval(timerRef);document.body.classList.add('loading');$('status').textContent='جارٍ تصحيح الاختبار...';
+  try{
+    const {data,error}=await db.rpc('finish_exam',{p_attempt_id:attemptId});
+    if(error)throw error;
+    clearSession();localStorage.setItem('qudrat_result',JSON.stringify(data));location.href='results.html';
+  }catch(e){
+    console.error(e);finishing=false;document.body.classList.remove('loading');
+    $('status').textContent='تعذر إنهاء الاختبار: '+(e?.message||'تحقق من الاتصال ثم حاول مرة أخرى');
+  }
 }
 
 // startTimer: implementation defined below with section timing.
@@ -165,7 +179,7 @@ function goNextSection(auto=false){
   const start=secStart(),end=secEnd();
   const unanswered=questions.slice(start,end+1).filter(q=>answers[q.id]==null).length;
   if(!auto&&!confirm((unanswered?`لديك ${unanswered} سؤال غير مجاب. `:'')+'بعد الانتقال لن تتمكن من العودة لهذا القسم. هل تريد الانتقال؟'))return;
-  sectionIndex++; current=sectionIndex*24; sectionSeconds=1500; render();
+  sectionIndex++; current=sectionIndex*24; sectionSeconds=1500; sectionDeadline=Date.now()+1500000; render();
   $('status').textContent='بدأ القسم الجديد — 25 دقيقة';
 }
 
@@ -197,14 +211,50 @@ function openSectionEndModal(){const part=questions.slice(secStart(),secEnd()+1)
 $('staySectionBtn').onclick=()=>{$('sectionModal').hidden=true;pendingSectionMove=false};
 $('moveSectionBtn').onclick=()=>{$('sectionModal').hidden=true;pendingSectionMove=false;goNextSection(true)};
 $('nextBtn').onclick=()=>{if(current<secEnd()){current++;render();return}if(!simFull() || current===95)confirmFinish();else openSectionEndModal()};
-const __goNext=goNextSection;goNextSection=function(auto=false){if(!simFull()){confirmFinish();return;}if(auto){sectionIndex++;if(sectionIndex>=4){finish();return}current=sectionIndex*24;sectionSeconds=1500;warned5=false;warned1=false;render();persistSession();showTimeWarning(`بدأ القسم ${sectionIndex+1} من 4 — أمامك 25 دقيقة`);return}openSectionEndModal()};
-startTimer=function(){const paint=()=>{$('timer').textContent=fmt(seconds);$('sectionTimer').textContent=fmt(sectionSeconds);$('timer').style.color=seconds<=120?'#ffd1cc':'';$('sectionTimer').style.color=sectionSeconds<=60?'#ffd1cc':'';$('sectionTimer').classList.toggle('timerPulse',sectionSeconds<=60)};paint();timerRef=setInterval(()=>{seconds=Math.max(0,seconds-1);sectionSeconds=Math.max(0,sectionSeconds-1);paint();if(simFull()){if(sectionSeconds===300&&!warned5){warned5=true;showTimeWarning('تبقّى 5 دقائق على انتهاء القسم')}if(sectionSeconds===60&&!warned1){warned1=true;showTimeWarning('تبقّت دقيقة واحدة على انتهاء القسم',true)}if(sectionSeconds===0&&seconds>0){showTimeWarning('انتهى وقت القسم — سيتم الانتقال تلقائيًا',true);goNextSection(true)}}if(seconds===0){clearInterval(timerRef);finish()}},1000)};
+const __goNext=goNextSection;goNextSection=function(auto=false){if(!simFull()){confirmFinish();return;}if(auto){sectionIndex++;if(sectionIndex>=4){finish();return}current=sectionIndex*24;sectionSeconds=1500;sectionDeadline=Date.now()+1500000;warned5=false;warned1=false;render();persistSession();showTimeWarning(`بدأ القسم ${sectionIndex+1} من 4 — أمامك 25 دقيقة`);return}openSectionEndModal()};
+function advanceExpiredSections(){
+  if(!simFull())return;
+  const now=Date.now();
+  while(sectionIndex<3 && sectionDeadline<=now){
+    sectionIndex++;
+    current=sectionIndex*24;
+    sectionDeadline+=1500000;
+  }
+  sectionSeconds=Math.max(0,Math.ceil((sectionDeadline-now)/1000));
+  render();persistSession();
+}
+startTimer=function(){
+  clearInterval(timerRef);
+  const paint=()=>{
+    const now=Date.now();
+    seconds=Math.max(0,Math.ceil((totalDeadline-now)/1000));
+    sectionSeconds=Math.max(0,Math.ceil((sectionDeadline-now)/1000));
+    $('timer').textContent=fmt(seconds);$('sectionTimer').textContent=fmt(sectionSeconds);
+    $('timer').style.color=seconds<=120?'#ffd1cc':'';$('sectionTimer').style.color=sectionSeconds<=60?'#ffd1cc':'';
+    $('sectionTimer').classList.toggle('timerPulse',sectionSeconds<=60);
+  };
+  const tick=()=>{
+    paint();
+    if(seconds<=0){clearInterval(timerRef);finish();return}
+    if(simFull()){
+      if(sectionSeconds<=300&&!warned5){warned5=true;showTimeWarning('تبقّى 5 دقائق على انتهاء القسم')}
+      if(sectionSeconds<=60&&!warned1){warned1=true;showTimeWarning('تبقّت دقيقة واحدة على انتهاء القسم',true)}
+      if(sectionSeconds<=0){
+        if(sectionIndex>=3){clearInterval(timerRef);finish();return}
+        showTimeWarning('انتهى وقت القسم — سيتم الانتقال تلقائيًا',true);
+        sectionIndex++;current=sectionIndex*24;sectionDeadline=Date.now()+1500000;
+        warned5=false;warned1=false;render();persistSession();
+      }
+    }
+  };
+  tick();timerRef=setInterval(tick,1000);
+};
 
 // حماية جلسة الاختبار من التحديث أو الإغلاق العرضي.
 const SESSION_KEY='qudrat_active_session_v10';
 function persistSession(){
   if(!attemptId||!questions.length)return;
-  try{localStorage.setItem(SESSION_KEY,JSON.stringify({attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,ts:Date.now()}))}catch{}
+  try{localStorage.setItem(SESSION_KEY,JSON.stringify({attemptId,questions,current,answers,flags,seconds,sectionSeconds,sectionIndex,devQuick,totalDeadline,sectionDeadline,ts:Date.now()}))}catch{}
 }
 function clearSession(){try{localStorage.removeItem(SESSION_KEY)}catch{}}
 window.addEventListener('beforeunload',e=>{if(attemptId&&!finishing){persistSession();e.preventDefault();e.returnValue=''}});
