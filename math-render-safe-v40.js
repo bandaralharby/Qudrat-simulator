@@ -1,4 +1,4 @@
-// Qudrat v59 — stable RTL-safe math + visuals for exam and results.
+// Qudrat v60 — RTL-safe math + Arabic-Indic exponent digits.
 (function(){
  const D='٠١٢٣٤٥٦٧٨٩', ar=s=>String(s??'').replace(/[0-9]/g,d=>D[d]);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -11,7 +11,7 @@
    .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])))
    .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`))
    .replace(/\{\{sqrt:([^}]+)\}\}/gi,(_,x)=>hold(`<span class="qsqrt" dir="ltr">√<span>${esc(ar(x))}</span></span>`))
-   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qpow" dir="ltr">${esc(ar(a))}<sup>${esc(ar(b))}</sup></span>`));
+   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qpow" dir="ltr">${esc(ar(a))}<sup dir="rtl">${esc(ar(b))}</sup></span>`));
   s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s}
  window.QudratMath={render,ar};
 })();
