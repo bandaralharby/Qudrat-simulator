@@ -1,13 +1,19 @@
-// Qudrat v34 — lightweight math/diagram renderer (no external dependency)
-// Supported inline syntax in question text / choices:
-// [frac:a/b]  [sqrt:x]  [pow:x^n]  [ratio:a:b]
-// Visual blocks in question text:
-// [shape:triangle] [shape:rectangle] [shape:circle] [shape:shaded-square]
-// [bar:label1=10,label2=20,label3=15]
+// Qudrat v35 — math/diagram renderer. Supports legacy [] and database {{}} syntax.
 (function(){
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function normalize(src){
+    let s=String(src??'');
+    s=s.replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,'[frac:$1/$2]');
+    s=s.replace(/\{\{sqrt:([^}]+)\}\}/g,'[sqrt:$1]');
+    s=s.replace(/\{\{shape:rect(?::[^}]*)?\}\}/g,'[shape:rectangle]');
+    s=s.replace(/\{\{shape:triangle(?::[^}]*)?\}\}/g,'[shape:triangle]');
+    s=s.replace(/\{\{shape:circle(?::[^}]*)?\}\}/g,'[shape:circle]');
+    s=s.replace(/\{\{shape:square(?::[^}]*)?\}\}/g,'[shape:shaded-square]');
+    s=s.replace(/\{\{chart:bar:([^}]+)\}\}/g,'[bar:$1]');
+    return s;
+  }
   function inline(src){
-    let s=esc(src??'');
+    let s=esc(normalize(src));
     s=s.replace(/\[frac:([^\]\/]+)\/([^\]]+)\]/g,'<span class="qfrac"><span>$1</span><span>$2</span></span>');
     s=s.replace(/\[sqrt:([^\]]+)\]/g,'<span class="qsqrt">√<span>$1</span></span>');
     s=s.replace(/\[pow:([^\]^]+)\^([^\]]+)\]/g,'<span class="qpow">$1<sup>$2</sup></span>');
@@ -18,7 +24,7 @@
     if(type==='triangle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مثلث"><polygon points="120,18 28,132 212,132" class="qstroke"/></svg></div>';
     if(type==='rectangle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مستطيل"><rect x="35" y="30" width="170" height="90" class="qstroke"/></svg></div>';
     if(type==='circle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="دائرة"><circle cx="120" cy="75" r="55" class="qstroke"/><line x1="120" y1="75" x2="175" y2="75" class="qstroke"/></svg></div>';
-    if(type==='shaded-square')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مربع مظلل"><rect x="55" y="15" width="130" height="120" class="qstroke"/><path d="M55 15 L185 15 L55 135 Z" class="qshade"/><line x1="55" y1="135" x2="185" y2="15" class="qstroke"/></svg></div>';
+    if(type==='shaded-square')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مربع"><rect x="55" y="15" width="130" height="120" class="qstroke"/><path d="M55 15 L185 15 L55 135 Z" class="qshade"/><line x1="55" y1="135" x2="185" y2="15" class="qstroke"/></svg></div>';
     return '';
   }
   function bars(spec){
@@ -30,7 +36,8 @@
   function renderQuestion(el){
     if(!el)return;
     const raw=el.textContent||'';
-    let html=inline(raw);
+    const normalized=normalize(raw);
+    let html=inline(normalized);
     html=html.replace(/\[shape:(triangle|rectangle|circle|shaded-square)\]/g,(_,t)=>shape(t));
     html=html.replace(/\[bar:([^\]]+)\]/g,(_,s)=>bars(s));
     if(html!==esc(raw))el.innerHTML=html;
@@ -40,12 +47,13 @@
     root.querySelectorAll('button span').forEach(el=>{const raw=el.textContent||'';const html=inline(raw);if(html!==esc(raw))el.innerHTML=html;});
   }
   function apply(){renderQuestion(document.getElementById('questionText'));renderChoices(document.getElementById('answers'));}
-  const obs=new MutationObserver(()=>{queueMicrotask(apply)});
+  let pending=false;
+  const obs=new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;apply();});});
   window.addEventListener('DOMContentLoaded',()=>{
     const q=document.getElementById('questionText'),a=document.getElementById('answers');
     if(q)obs.observe(q,{childList:true,subtree:true,characterData:true});
-    if(a)obs.observe(a,{childList:true,subtree:true});
+    if(a)obs.observe(a,{childList:true,subtree:true,characterData:true});
     apply();
   });
-  window.QudratMath={apply,inline};
+  window.QudratMath={apply,inline,normalize};
 })();
