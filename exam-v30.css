@@ -21,3 +21,5 @@ button{font:inherit;cursor:pointer}.topbar{min-height:96px;background:#173866;co
 .answers button span:before{content:none!important}
 .answers button.chosen b.answerLetter{color:#fff;background:#1473e6;border-color:#1473e6}
 .answers button.chosen b.answerLetter:after{content:none!important}
+
+.navigatorHead{display:flex;align-items:center;justify-content:space-between;gap:12px}.navigatorHead h2{margin:0 0 10px}.closeNavigatorBtn{border:1px solid #9fb3c8;background:#fff;color:#173866;border-radius:6px;padding:8px 13px;font-weight:700;cursor:pointer}.closeNavigatorBtn:hover{background:#f3f7fb}@media(min-width:761px){.closeNavigatorBtn{display:none}}@media(max-width:760px){.closeNavigatorBtn{display:block;position:sticky;top:0;z-index:2}.navigatorHead{background:#fff;position:sticky;top:-14px;z-index:3;padding-top:14px}}

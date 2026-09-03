@@ -235,9 +235,35 @@ render=function(){syncSection();_renderBase();if(simFull()){
 }}
 $('prevBtn').onclick=()=>{if(current>secStart()){current--;render()}};
 $('nextBtn').onclick=()=>{if(current<secEnd()){current++;render();return}if(!simFull()||current===95)confirmFinish();else openSectionEndModal()};
-$('quantTab').onclick=$('verbalTab').onclick=()=>{$('status').textContent='يمكنك مراجعة أسئلة القسم الحالي فقط'};
-renderDots=function(){const host=$('dots');host.innerHTML='';const rows=simFull()?questions.slice(secStart(),secEnd()+1).map((q,j)=>({q,i:secStart()+j})):sectionQuestions(activeSection);rows.forEach(({q,i},j)=>{const e=document.createElement('button');e.type='button';e.textContent=simFull()?j+1:i+1;if(answers[q.id]!=null)e.classList.add('answered');if(flags[q.id])e.classList.add('flagged');if(i===current)e.classList.add('current');e.onclick=()=>{current=i;render();closeNavigatorMobile()};host.appendChild(e)})};
-$('allQuestionsBtn').onclick=()=>renderDots();
+// شاشة عرض جميع الأسئلة: يمكن تصفح القسمين ثم الرجوع لنفس السؤال بزر إغلاق.
+let overviewSection=null;
+function openQuestionsOverview(){
+  overviewSection=questions[current]?.section||'quantitative';
+  renderDots();
+  if(innerWidth<=760)$('navigator').classList.add('open');
+}
+function closeQuestionsOverview(){
+  $('navigator').classList.remove('open');
+  overviewSection=null;
+  render();
+}
+$('showAllBtn').onclick=openQuestionsOverview;
+$('allQuestionsBtn').onclick=openQuestionsOverview;
+$('closeNavigatorBtn').onclick=closeQuestionsOverview;
+$('quantTab').onclick=()=>{overviewSection='quantitative';renderDots()};
+$('verbalTab').onclick=()=>{overviewSection='verbal';renderDots()};
+renderDots=function(){
+  const host=$('dots');host.innerHTML='';
+  const shown=overviewSection || (simFull()?questions[current]?.section:activeSection);
+  $('quantTab').classList.toggle('active',shown==='quantitative');
+  $('verbalTab').classList.toggle('active',shown==='verbal');
+  const rows=questions.map((q,i)=>({q,i})).filter(x=>x.q.section===shown);
+  rows.forEach(({q,i},j)=>{
+    const e=document.createElement('button');e.type='button';e.textContent=j+1;
+    if(answers[q.id]!=null)e.classList.add('answered');if(flags[q.id])e.classList.add('flagged');if(i===current)e.classList.add('current');
+    e.onclick=()=>{current=i;activeSection=q.section;overviewSection=null;render();closeNavigatorMobile()};host.appendChild(e)
+  });
+};
 
 let warned5=false,warned1=false,pendingSectionMove=false;
 function showTimeWarning(text,urgent=false){const w=$('timeWarning');if(!w)return;w.textContent=text;w.hidden=false;w.classList.toggle('urgent',urgent);clearTimeout(showTimeWarning._t);showTimeWarning._t=setTimeout(()=>w.hidden=true,4500)}

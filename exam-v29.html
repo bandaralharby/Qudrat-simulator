@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>الاختبار المحاكي | محاكي القدرات</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="exam-v30.css?v=32">
+  <link rel="stylesheet" href="exam-v30.css?v=33">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="examBody">
@@ -51,7 +51,7 @@
 
   <main class="examShell">
     <aside class="navigator" id="navigator">
-      <h2>الأسئلة</h2>
+      <div class="navigatorHead"><h2>الأسئلة</h2><button type="button" id="closeNavigatorBtn" class="closeNavigatorBtn">إغلاق ×</button></div>
       <div class="sectionTabs">
         <button type="button" id="quantTab">القسم الكمي (<span id="quantCount">0</span>)</button>
         <button type="button" id="verbalTab">القسم اللفظي (<span id="verbalCount">0</span>)</button>
@@ -136,6 +136,6 @@
   </div>
 
   <script src="supabase-config.js?v=27"></script>
-  <script src="exam-v29.js?v=32"></script>
+  <script src="exam-v29.js?v=33"></script>
 </body>
 </html>
