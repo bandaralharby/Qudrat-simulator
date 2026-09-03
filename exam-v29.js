@@ -98,8 +98,8 @@ function render(){
   q.choices.forEach((choice,i)=>{
     const b=document.createElement('button');
     if(answers[q.id]===choice)b.classList.add('chosen');
-    b.innerHTML='<b></b><span></span>';
-    b.querySelector('span').dataset.letter=letters[i]||'';
+    b.innerHTML='<b class="answerLetter"></b><span></span>';
+    b.querySelector('.answerLetter').textContent=letters[i]||'';
     b.querySelector('span').textContent=choice;
     b.onclick=()=>selectAnswer(choice);
     $('answers').appendChild(b);
@@ -189,14 +189,14 @@ async function finish(){
     let response=await withTimeout(rpcFinish(),12000);
     if(response.error) throw response.error;
     localStorage.setItem('qudrat_result',JSON.stringify(response.data));
-    location.replace('results.html?v=27');
+    location.replace('results.html?v=30');
   }catch(firstError){
     console.error(firstError);
     try{
       const response=await withTimeout(rpcFinish(),12000);
       if(response.error) throw response.error;
       localStorage.setItem('qudrat_result',JSON.stringify(response.data));
-      location.replace('results.html?v=27');
+      location.replace('results.html?v=30');
     }catch(e){
       console.error(e);
       // لا نعيد الاختبار المنتهي. نعطي المستخدم خيار إعادة محاولة جلب النتيجة فقط.
