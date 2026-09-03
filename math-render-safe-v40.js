@@ -1,4 +1,4 @@
-// Qudrat v55 — direct visual-token renderer.
+// Qudrat v56 — stable visual renderer for exam + results.
 (function(){
  const D='٠١٢٣٤٥٦٧٨٩', ar=s=>String(s??'').replace(/[0-9]/g,d=>D[d]);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -10,18 +10,18 @@
   if(type==='circle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><circle cx="150" cy="92" r="70" class="qstroke"/><circle cx="150" cy="92" r="3" class="qfill"/><line x1="150" y1="92" x2="220" y2="92" class="qstroke"/>${label(185,80,a[0]||'')}</svg></div>`;
   return'';
  }
- function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')), vals=z.map(x=>Number(x[1])||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
+ function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(x[1])||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
  function render(raw){
-  let s=String(raw??''); const visuals=[];
-  const hold=h=>{let i=visuals.push(h)-1;return `@@VIS${i}@@`};
-  s=s.replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a? a.split(':'):[])))
+  let s=String(raw??''), visuals=[];
+  const hold=h=>{const i=visuals.push(h)-1;return `QVHOLDER${String.fromCharCode(65+i)}ZZ`};
+  s=s.replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
      .replace(/\{\{chart:bar:([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
      .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])));
   s=esc(s)
    .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>`<span class="qfrac"><span>${ar(a)}</span><span>${ar(b)}</span></span>`)
    .replace(/\{\{sqrt:([^}]+)\}\}/g,(_,x)=>`<span class="qsqrt">√<span>${ar(x)}</span></span>`)
    .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/g,(_,a,b)=>`<span class="qpow">${ar(a)}<sup>${ar(b)}</sup></span>`);
-  s=ar(s); visuals.forEach((h,i)=>{s=s.split(`@@VIS${ar(i)}@@`).join(h).split(`@@VIS${i}@@`).join(h)}); return s;
+  s=ar(s); visuals.forEach((h,i)=>{s=s.split(`QVHOLDER${String.fromCharCode(65+i)}ZZ`).join(h)});return s;
  }
  window.QudratMath={render,ar};
 })();
