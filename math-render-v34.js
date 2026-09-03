@@ -1,59 +1,25 @@
-// Qudrat v35 — math/diagram renderer. Supports legacy [] and database {{}} syntax.
+// Qudrat v36 — math/diagram renderer with dimension labels.
 (function(){
-  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function normalize(src){
-    let s=String(src??'');
-    s=s.replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,'[frac:$1/$2]');
-    s=s.replace(/\{\{sqrt:([^}]+)\}\}/g,'[sqrt:$1]');
-    s=s.replace(/\{\{shape:rect(?::[^}]*)?\}\}/g,'[shape:rectangle]');
-    s=s.replace(/\{\{shape:triangle(?::[^}]*)?\}\}/g,'[shape:triangle]');
-    s=s.replace(/\{\{shape:circle(?::[^}]*)?\}\}/g,'[shape:circle]');
-    s=s.replace(/\{\{shape:square(?::[^}]*)?\}\}/g,'[shape:shaded-square]');
-    s=s.replace(/\{\{chart:bar:([^}]+)\}\}/g,'[bar:$1]');
-    return s;
-  }
-  function inline(src){
-    let s=esc(normalize(src));
-    s=s.replace(/\[frac:([^\]\/]+)\/([^\]]+)\]/g,'<span class="qfrac"><span>$1</span><span>$2</span></span>');
-    s=s.replace(/\[sqrt:([^\]]+)\]/g,'<span class="qsqrt">√<span>$1</span></span>');
-    s=s.replace(/\[pow:([^\]^]+)\^([^\]]+)\]/g,'<span class="qpow">$1<sup>$2</sup></span>');
-    s=s.replace(/\[ratio:([^:\]]+):([^\]]+)\]/g,'<span class="qratio">$1 : $2</span>');
-    return s;
-  }
-  function shape(type){
-    if(type==='triangle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مثلث"><polygon points="120,18 28,132 212,132" class="qstroke"/></svg></div>';
-    if(type==='rectangle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مستطيل"><rect x="35" y="30" width="170" height="90" class="qstroke"/></svg></div>';
-    if(type==='circle')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="دائرة"><circle cx="120" cy="75" r="55" class="qstroke"/><line x1="120" y1="75" x2="175" y2="75" class="qstroke"/></svg></div>';
-    if(type==='shaded-square')return '<div class="qvisual"><svg viewBox="0 0 240 150" aria-label="مربع"><rect x="55" y="15" width="130" height="120" class="qstroke"/><path d="M55 15 L185 15 L55 135 Z" class="qshade"/><line x1="55" y1="135" x2="185" y2="15" class="qstroke"/></svg></div>';
-    return '';
-  }
-  function bars(spec){
-    const items=spec.split(',').map(x=>{const p=x.split('=');return [p[0],Number(p[1])]}).filter(x=>x[0]&&Number.isFinite(x[1]));
-    if(!items.length)return '';
-    const max=Math.max(...items.map(x=>x[1]),1);
-    return '<div class="qchart" aria-label="رسم بياني">'+items.map(([l,v])=>'<div class="qbarRow"><span>'+esc(l)+'</span><i style="--w:'+(v/max*100)+'%"></i><b>'+v+'</b></div>').join('')+'</div>';
-  }
-  function renderQuestion(el){
-    if(!el)return;
-    const raw=el.textContent||'';
-    const normalized=normalize(raw);
-    let html=inline(normalized);
-    html=html.replace(/\[shape:(triangle|rectangle|circle|shaded-square)\]/g,(_,t)=>shape(t));
-    html=html.replace(/\[bar:([^\]]+)\]/g,(_,s)=>bars(s));
-    if(html!==esc(raw))el.innerHTML=html;
-  }
-  function renderChoices(root){
-    if(!root)return;
-    root.querySelectorAll('button span').forEach(el=>{const raw=el.textContent||'';const html=inline(raw);if(html!==esc(raw))el.innerHTML=html;});
-  }
-  function apply(){renderQuestion(document.getElementById('questionText'));renderChoices(document.getElementById('answers'));}
-  let pending=false;
-  const obs=new MutationObserver(()=>{if(pending)return;pending=true;queueMicrotask(()=>{pending=false;apply();});});
-  window.addEventListener('DOMContentLoaded',()=>{
-    const q=document.getElementById('questionText'),a=document.getElementById('answers');
-    if(q)obs.observe(q,{childList:true,subtree:true,characterData:true});
-    if(a)obs.observe(a,{childList:true,subtree:true,characterData:true});
-    apply();
-  });
-  window.QudratMath={apply,inline,normalize};
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function inline(src){let s=esc(String(src??''));s=s.replace(/\{\{frac:([^}:]+):([^}]+)\}\}/g,'<span class="qfrac"><span>$1</span><span>$2</span></span>');s=s.replace(/\{\{sqrt:([^}]+)\}\}/g,'<span class="qsqrt">√<span>$1</span></span>');s=s.replace(/\[frac:([^\]\/]+)\/([^\]]+)\]/g,'<span class="qfrac"><span>$1</span><span>$2</span></span>');s=s.replace(/\[sqrt:([^\]]+)\]/g,'<span class="qsqrt">√<span>$1</span></span>');return s}
+ const tx=(x,y,t)=>'<text x="'+x+'" y="'+y+'" text-anchor="middle" class="qlabel">'+esc(t)+'</text>';
+ function one(type,a=[]){
+  if(type==='triangle'){let A=a[0]||'',B=a[1]||'',C=a[2]||'';return '<svg viewBox="0 0 300 190"><polygon points="150,25 45,155 255,155" class="qstroke"/>'+tx(150,181,B)+tx(72,88,A)+tx(226,88,C)+'</svg>'}
+  if(type==='rect'){let w=a[0]||'',h=a[1]||'';return '<svg viewBox="0 0 300 190"><rect x="48" y="35" width="204" height="115" class="qstroke"/>'+tx(150,178,w)+tx(25,98,h)+'</svg>'}
+  if(type==='circle'){let r=a[0]||'';return '<svg viewBox="0 0 300 190"><circle cx="150" cy="95" r="68" class="qstroke"/><circle cx="150" cy="95" r="3" class="qfill"/><line x1="150" y1="95" x2="218" y2="95" class="qstroke"/>'+tx(184,84,r? r+' سم':'')+'</svg>'}
+  if(type==='square'){let d=a[0]||'';return '<svg viewBox="0 0 300 190"><rect x="65" y="20" width="170" height="150" class="qstroke"/><path d="M65 20 L235 20 L65 170 Z" class="qshade"/><line x1="65" y1="170" x2="235" y2="20" class="qstroke"/>'+tx(150,188,d)+'</svg>'}
+  return '';
+ }
+ function composite(tokens){
+   if(tokens.length===2 && tokens[0].type==='square' && tokens[1].type==='square'){
+    const a=tokens[0].args[0]||'',b=tokens[1].args[0]||'';
+    return '<div class="qvisual"><svg viewBox="0 0 320 220"><rect x="45" y="20" width="230" height="180" class="qstroke"/><rect x="45" y="110" width="115" height="90" class="qstroke qinner"/>'+tx(160,217,a)+tx(102,103,b)+'</svg></div>';
+   }
+   return tokens.map(t=>'<div class="qvisual">'+one(t.type,t.args)+'</div>').join('');
+ }
+ function renderQuestion(el){if(!el)return;let raw=el.textContent||'';let tokens=[];raw=raw.replace(/\{\{shape:(triangle|rect|circle|square)(?::([^}]+))?\}\}/g,(_,type,args)=>{let id='@@SH'+tokens.length+'@@';tokens.push({type,args:args?args.split(':'):[]});return id});raw=raw.replace(/\{\{chart:bar:([^}]+)\}\}/g,(_,s)=>'@@BAR'+encodeURIComponent(s)+'@@');let html=inline(raw);if(tokens.length){let all=tokens.map((_,i)=>'@@SH'+i+'@@').join('');if(html.includes(all))html=html.replace(all,composite(tokens));else tokens.forEach((t,i)=>html=html.replace('@@SH'+i+'@@','<div class="qvisual">'+one(t.type,t.args)+'</div>'))}html=html.replace(/@@BAR([^@]+)@@/g,(_,x)=>bars(decodeURIComponent(x)));el.innerHTML=html}
+ function bars(spec){const items=spec.split(',').map(x=>{let p=x.split('=');return[p[0],Number(p[1])]}).filter(x=>x[0]&&Number.isFinite(x[1]));if(!items.length)return'';let max=Math.max(...items.map(x=>x[1]),1);return'<div class="qchart">'+items.map(([l,v])=>'<div class="qbarRow"><span>'+esc(l)+'</span><i style="--w:'+(v/max*100)+'%"></i><b>'+v+'</b></div>').join('')+'</div>'}
+ function renderChoices(root){if(!root)return;root.querySelectorAll('button span').forEach(el=>{el.innerHTML=inline(el.textContent||'')})}
+ function apply(){renderQuestion(document.getElementById('questionText'));renderChoices(document.getElementById('answers'))}
+ let busy=false;const obs=new MutationObserver(()=>{if(busy)return;busy=true;queueMicrotask(()=>{busy=false;apply()})});window.addEventListener('DOMContentLoaded',()=>{let q=document.getElementById('questionText'),a=document.getElementById('answers');if(q)obs.observe(q,{childList:true,subtree:true,characterData:true});if(a)obs.observe(a,{childList:true,subtree:true,characterData:true});apply()});window.QudratMath={apply,inline};
 })();
