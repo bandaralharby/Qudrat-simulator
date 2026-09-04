@@ -7,8 +7,7 @@
  function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(String(x[1]||'').replace(/[٠-٩]/g,d=>D.indexOf(d)))||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
  function render(raw){let s=String(raw??''),holds=[];const hold=h=>{const key=`QQHOLD${String.fromCharCode(65+holds.length)}ZZ`;holds.push([key,h]);return key};
   s=s.replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
-   .replace(/(^|[^\d٠-٩۰-۹])([0-9٠-٩۰-۹]+)\s*\/\s*([0-9٠-٩۰-۹]+)(?![\d٠-٩۰-۹])/g,(_,p,a,b)=>p+hold(`<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`))
-   .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
+      .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
    .replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
    .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])))
    .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`))
