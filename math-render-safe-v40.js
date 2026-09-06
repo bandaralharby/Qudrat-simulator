@@ -1,6 +1,6 @@
 // Qudrat v60 — RTL-safe math + Arabic-Indic exponent digits.
 (function(){
- const D='٠١٢٣٤٥٦٧٨٩', ar=s=>String(s??'').replace(/[0-9۰-۹]/g,d=>/[0-9]/.test(d)?D[d]:D['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]);
+ const D='٠١٢٣٤٥٦٧٨٩', supMap={'٠':'⁰','١':'¹','٢':'²','٣':'³','٤':'⁴','٥':'⁵','٦':'⁶','٧':'⁷','٨':'⁸','٩':'⁹','-':'⁻','−':'⁻','+':'⁺'}, ar=s=>String(s??'').replace(/[0-9۰-۹]/g,d=>/[0-9]/.test(d)?D[d]:D['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]);
  const sup=s=>ar(s).split('').map(c=>supMap[c]||c).join('');
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const label=(x,y,t)=>`<text x="${x}" y="${y}" text-anchor="middle" class="qlabel">${esc(ar(t))}</text>`;
