@@ -17,11 +17,12 @@
    if(q&&window.QudratMath){
      const raw=q.textContent||'';
      if(raw.includes('{{')||raw.includes('[frac:')||raw.includes('[sqrt:')) q.innerHTML=window.QudratMath.render(raw);
-     fixSuperscripts(q);
+     // Do not flatten superscripts: QudratMath must own exponent layout.
+     if(!q.querySelector('.qpow')) fixSuperscripts(q);
    }
    document.querySelectorAll('#answers button span').forEach(el=>{
      if(window.QudratMath){const raw=el.textContent||''; if(raw.includes('{{')||raw.includes('[frac:')||raw.includes('[sqrt:'))el.innerHTML=window.QudratMath.render(raw);}
-     fixSuperscripts(el);
+     if(!el.querySelector('.qpow')) fixSuperscripts(el);
    });
    ['timer','sectionTimer','topCounter','counter','quantCount','verbalCount'].forEach(id=>{const el=document.getElementById(id);if(el)fixSuperscripts(el)});
  }
