@@ -27,7 +27,7 @@
    .replace(/√\s*([0-9٠-٩۰-۹]+(?:[.,٫][0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)))
    .replace(/√\s*([A-Za-z\u0600-\u06FF](?:\s*[+\-−×÷]\s*[A-Za-z0-9٠-٩۰-۹\u0600-\u06FF]+)?)/g,(_,x)=>hold(sqrt(x)));
   // Canonical database form: ٦٤^(س-١), ٩^(س−١), etc. Protect the whole power before RTL can reorder it.
-  s=s.replace(/([A-Za-z\\u0600-\\u06FF0-9٠-٩۰-۹]+)\\s*\\^\\s*[（(]\\s*([^()（）]{1,40})\\s*[)）]/g,(_,a,b)=>hold(pow(a,b)));
+  s=s.replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+)\s*\^\s*[（(]\s*([^()（）]{1,40})\s*[)）]/g,(_,a,b)=>hold(pow(a,b)));
   // 3) Normalize powers. Catch legacy Arabic forms, including a bare exponent after a numeric base (٦٣ meaning ٦^٣ when the exponent is visually separated in source markup).
   // First protect explicit base/exponent pairs separated by whitespace: "٦ ٣ × ٦ ٤".
   s=s.replace(/([0-9٠-٩۰-۹]+)\s+([٢٣٤٥٦٧٨٩2-9])(?=\s*(?:[×*÷+\-−=،,.؟?]|$))/g,(_,a,b)=>hold(pow(a,b)))
