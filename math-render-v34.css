@@ -26,3 +26,8 @@
 .qpow{display:inline-flex!important;direction:rtl!important;unicode-bidi:isolate!important;align-items:flex-start!important;vertical-align:baseline!important;white-space:nowrap!important}
 .qpow .qbase{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:1!important}
 .qpow sup{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:2!important;font-size:.60em!important;line-height:1!important;position:relative!important;top:-.52em!important;margin:0 .03em 0 0!important;vertical-align:baseline!important}
+
+/* v92 hard power layout: DOM order is always BASE then EXPONENT */
+.qpow{display:inline-flex!important;direction:ltr!important;unicode-bidi:isolate!important;align-items:baseline!important;white-space:nowrap!important;vertical-align:baseline!important;gap:0!important}
+.qpow>.qbase{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:0!important}
+.qpow>.qexp{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:1!important;font-size:.60em!important;line-height:1!important;position:relative!important;top:-.72em!important;margin-left:.03em!important;margin-right:0!important}
