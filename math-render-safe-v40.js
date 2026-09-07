@@ -13,7 +13,7 @@
   let s=String(raw??''),holds=[],n=0;
   // Never expose internal legacy placeholders to students. They were accidentally persisted in some bank rows.
   // If a legacy token is present, remove it cleanly; valid raw math around it remains renderable.
-  s=s.replace(/QQMATHHOLD[^\s<]{0,12}ZZ/gi,'').replace(/QMATHX[A-Z]+XEND/gi,'');
+  s=s.replace(/QQMATHHOLD[^Z\n<]{0,24}ZZ/gi,'');
   const hold=h=>{const key=`\uE000${String.fromCharCode(0xE100+(n++))}\uE001`;holds.push([key,h]);return key};
   // 1) Explicit canonical tokens first.
   s=s.replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
