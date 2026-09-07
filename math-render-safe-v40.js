@@ -9,7 +9,7 @@
  function frac(a,b){return `<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`}
  function sqrt(x){return `<span class="qsqrt" dir="ltr"><span>${esc(ar(x))}</span></span>`}
  function expr(items){return `<span class="qexpr" dir="ltr" style="display:inline-flex;align-items:baseline;gap:.14em;unicode-bidi:isolate;white-space:nowrap">${items.join('')}</span>`}
- function pow(a,b){return `<span class="qpow" dir="rtl"><span class="qbase" dir="rtl">${esc(ar(a))}</span><sup dir="rtl">${esc(ar(b))}</sup></span>`}
+ function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase">${esc(ar(a))}</span><span class="qexp">${esc(ar(b))}</span></span>`}
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
   // Never expose internal legacy placeholders to students. They were accidentally persisted in some bank rows.
