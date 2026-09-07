@@ -1,3 +1,5 @@
+
+function cleanInternalQuestionLabels(v){return String(v??'').replace(/(?:تناظر\s+لفظي|لفظي|كمي)?\s*جديد\s*رقم\s*[0-9٠-٩۰-۹]+\s*[:：\-–—]?\s*/gi,'').replace(/^\s+|\s+$/g,'');}
 // Qudrat simulator V51 — restore geometry diagrams from text.
 const {createClient}=supabase;
 const db=createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
