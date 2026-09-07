@@ -36,3 +36,8 @@
 .choice .qpow,#answers .qpow,.exAnswer .qpow,.explain .qpow{direction:rtl!important;display:inline-block!important;unicode-bidi:isolate!important;white-space:nowrap!important}
 .choice .qpow>.qbase,#answers .qpow>.qbase,.exAnswer .qpow>.qbase,.explain .qpow>.qbase{display:inline-block!important;direction:rtl!important}
 .choice .qpow>.qexp,#answers .qpow>.qexp,.exAnswer .qpow>.qexp,.explain .qpow>.qexp{display:inline-block!important;direction:rtl!important;font-size:.62em!important;line-height:0!important;position:relative!important;top:-.55em!important;margin-right:.03em!important;margin-left:0!important;vertical-align:baseline!important}
+
+/* v94 question-only exponent fix: use the same proven layout as choices/explanations. */
+#questionText .qpow{direction:rtl!important;display:inline-block!important;unicode-bidi:isolate!important;white-space:nowrap!important;vertical-align:baseline!important}
+#questionText .qpow>.qbase{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important}
+#questionText .qpow>.qexp{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;font-size:.62em!important;line-height:0!important;position:relative!important;top:-.55em!important;margin-right:.03em!important;margin-left:0!important;vertical-align:baseline!important}
