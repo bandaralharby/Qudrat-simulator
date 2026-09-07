@@ -9,7 +9,7 @@
  function frac(a,b){return `<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`}
  function sqrt(x){return `<span class="qsqrt" dir="ltr"><span>${esc(ar(x))}</span></span>`}
  function expr(items){return `<span class="qexpr" dir="ltr" style="display:inline-flex;align-items:baseline;gap:.14em;unicode-bidi:isolate;white-space:nowrap">${items.join('')}</span>`}
- function pow(a,b){return `<span class="qpow" dir="ltr" style="display:inline-flex;align-items:baseline;unicode-bidi:isolate;white-space:nowrap;vertical-align:baseline;line-height:1"><span class="qbase" dir="ltr">${esc(ar(a))}</span><sup dir="ltr" style="position:relative;top:-.42em;font-size:.62em;line-height:0;unicode-bidi:isolate;margin-inline-start:.04em">${esc(ar(b))}</sup></span>`}
+ function pow(a,b){return `<span class="qpow" dir="ltr" style="display:inline-block;position:relative;unicode-bidi:isolate;white-space:nowrap;vertical-align:baseline;line-height:1;padding-top:.18em;padding-inline-end:.28em"><span class="qbase" dir="ltr" style="display:inline-block">${esc(ar(a))}</span><sup dir="ltr" style="position:absolute;right:0;top:-.28em;font-size:.58em;line-height:1;unicode-bidi:isolate">${esc(ar(b))}</sup></span>`}
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
   // Never expose internal legacy placeholders to students. They were accidentally persisted in some bank rows.
