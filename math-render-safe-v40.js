@@ -8,7 +8,7 @@
  function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(String(x[1]||'').replace(/[٠-٩]/g,d=>AR.indexOf(d)))||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
  function frac(a,b){return `<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`}
  function sqrt(x){return `<span class="qsqrt" dir="ltr"><span>${esc(ar(x))}</span></span>`}
- function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase" dir="rtl">${esc(ar(a))}</span><sup dir="ltr">${esc(ar(b))}</sup></span>`}
+ function pow(a,b){return `<span class="qpow" dir="ltr" style="unicode-bidi:isolate;white-space:nowrap"><span class="qbase" dir="ltr">${esc(ar(a))}</span><sup dir="ltr" style="unicode-bidi:isolate">${esc(ar(b))}</sup></span>`}
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
   // Never expose internal legacy placeholders to students. They were accidentally persisted in some bank rows.
@@ -26,6 +26,8 @@
   s=s.replace(/√\s*[（(]\s*([^()（）]{1,50}?)\s*[)）]/g,(_,x)=>hold(sqrt(x)))
    .replace(/√\s*([0-9٠-٩۰-۹]+(?:[.,٫][0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)))
    .replace(/√\s*([A-Za-z\u0600-\u06FF](?:\s*[+\-−×÷]\s*[A-Za-z0-9٠-٩۰-۹\u0600-\u06FF]+)?)/g,(_,x)=>hold(sqrt(x)));
+  // Canonical database form: ٦٤^(س-١), ٩^(س−١), etc. Protect the whole power before RTL can reorder it.
+  s=s.replace(/([A-Za-z\\u0600-\\u06FF0-9٠-٩۰-۹]+)\\s*\\^\\s*[（(]\\s*([^()（）]{1,40})\\s*[)）]/g,(_,a,b)=>hold(pow(a,b)));
   // 3) Normalize powers. Catch legacy Arabic forms, including a bare exponent after a numeric base (٦٣ meaning ٦^٣ when the exponent is visually separated in source markup).
   // First protect explicit base/exponent pairs separated by whitespace: "٦ ٣ × ٦ ٤".
   s=s.replace(/([0-9٠-٩۰-۹]+)\s+([٢٣٤٥٦٧٨٩2-9])(?=\s*(?:[×*÷+\-−=،,.؟?]|$))/g,(_,a,b)=>hold(pow(a,b)))
