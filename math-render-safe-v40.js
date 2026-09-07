@@ -26,8 +26,9 @@
   s=s.replace(/√\s*[（(]\s*([^()（）]{1,50}?)\s*[)）]/g,(_,x)=>hold(sqrt(x)))
    .replace(/√\s*([0-9٠-٩۰-۹]+(?:[.,٫][0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)))
    .replace(/√\s*([A-Za-z\u0600-\u06FF](?:\s*[+\-−×÷]\s*[A-Za-z0-9٠-٩۰-۹\u0600-\u06FF]+)?)/g,(_,x)=>hold(sqrt(x)));
-  // 3) Normalize powers. Special-case Arabic units so visually we always get سم² / م².
-  s=s.replace(/(سم|كم|مم|م)\s*[\^]\s*([0-9٠-٩۰-۹]+)/g,(_,a,b)=>hold(pow(a,b)))
+  // 3) Normalize powers. Catch legacy Arabic form where exponent is written after a parenthesized base without ^, e.g. (س-٤)٢.
+  s=s.replace(/([（(][^()（）]{1,40}[)）])\s*([٢٣23])(?=\s*(?:[=،,.؟?]|$))/g,(_,a,b)=>hold(pow(a,b)))
+   .replace(/(سم|كم|مم|م)\s*[\^]\s*([0-9٠-٩۰-۹]+)/g,(_,a,b)=>hold(pow(a,b)))
    .replace(/(سم|كم|مم|م)([²³])/g,(_,a,b)=>hold(pow(a,b==='²'?'٢':'٣')))
    .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])\s*[\^]\s*[（(]?\s*([+\-−]?[0-9٠-٩۰-۹]+)\s*[)）]?/g,(_,a,b)=>hold(pow(a,b)))
    .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return hold(pow(a,[...b].map(x=>m[x]||x).join('')))});
