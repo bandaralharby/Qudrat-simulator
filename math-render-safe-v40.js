@@ -12,22 +12,25 @@
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
   const hold=h=>{const key=`QQMATHHOLD${n++}ZZ`;holds.push([key,h]);return key};
+  // 1) Explicit canonical tokens first.
   s=s.replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
    .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
    .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])))
    .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(frac(a,b)))
    .replace(/\{\{sqrt:([^}]+)\}\}/gi,(_,x)=>hold(sqrt(x)))
    .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(pow(a,b)));
-  // Legacy/plain roots: √25, √(25), √س, √(س+1). Keep the radical bar over the whole radicand.
-  s=s.replace(/√\s*[（(]\s*([^()（）]{1,40}?)\s*[)）]/g,(_,x)=>hold(sqrt(x)))
-     .replace(/√\s*([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+(?:\s*[+\-−×÷]\s*[A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)));
-  // Legacy/plain powers: 2^3, س^2, (س+1)^2. Exponent is always a real <sup>.
-  s=s.replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])\s*[\^]\s*[（(]?\s*([+\-−]?[0-9٠-٩۰-۹]+)\s*[)）]?/g,(_,a,b)=>hold(pow(a,b)))
-     .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\b/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return hold(pow(a,[...b].map(c=>m[c]||c).join('')))});
-  // Plain fractions used by older questions/explanations: 1/2 or ١/٢.
-  // Convert only numeric fractions, not dates/URLs.
-  s=s.replace(/(^|[^A-Za-z0-9٠-٩۰-۹])([0-9٠-٩۰-۹]+)\s*\/\s*([0-9٠-٩۰-۹]+)(?![A-Za-z0-9٠-٩۰-۹/])/g,
-    (_,pre,a,b)=>pre+hold(frac(a,b)));
+  // 2) Normalize legacy square-root forms. The radicand is isolated from RTL text.
+  s=s.replace(/√\s*[（(]\s*([^()（）]{1,50}?)\s*[)）]/g,(_,x)=>hold(sqrt(x)))
+   .replace(/√\s*([0-9٠-٩۰-۹]+(?:[.,٫][0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)))
+   .replace(/√\s*([A-Za-z\u0600-\u06FF](?:\s*[+\-−×÷]\s*[A-Za-z0-9٠-٩۰-۹\u0600-\u06FF]+)?)/g,(_,x)=>hold(sqrt(x)));
+  // 3) Normalize powers. Special-case Arabic units so visually we always get سم² / م².
+  s=s.replace(/(سم|كم|مم|م)\s*[\^]\s*([0-9٠-٩۰-۹]+)/g,(_,a,b)=>hold(pow(a,b)))
+   .replace(/(سم|كم|مم|م)([²³])/g,(_,a,b)=>hold(pow(a,b==='²'?'٢':'٣')))
+   .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])\s*[\^]\s*[（(]?\s*([+\-−]?[0-9٠-٩۰-۹]+)\s*[)）]?/g,(_,a,b)=>hold(pow(a,b)))
+   .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return hold(pow(a,[...b].map(x=>m[x]||x).join('')))});
+  // 4) Normalize every standalone numeric slash fraction, including Arabic-Indic digits.
+  s=s.replace(/([0-9٠-٩۰-۹]+)\s*[\/⁄]\s*([0-9٠-٩۰-۹]+)/g,(_,a,b)=>hold(frac(a,b)));
+  // Escape ordinary text, convert digits, then restore protected math HTML.
   s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s
  }
  window.QudratMath={render,ar};
