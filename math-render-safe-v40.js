@@ -8,7 +8,7 @@
  function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(String(x[1]||'').replace(/[٠-٩]/g,d=>AR.indexOf(d)))||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
  function frac(a,b){return `<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`}
  function sqrt(x){return `<span class="qsqrt" dir="ltr"><span>${esc(ar(x))}</span></span>`}
- function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase">${esc(ar(a))}</span><sup dir="ltr">${esc(ar(b))}</sup></span>`}
+ function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase" dir="rtl">${esc(ar(a))}</span><sup dir="ltr">${esc(ar(b))}</sup></span>`}
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
   const hold=h=>{const key=`QQMATHHOLD${n++}ZZ`;holds.push([key,h]);return key};
@@ -24,6 +24,10 @@
   // Legacy/plain powers: 2^3, س^2, (س+1)^2. Exponent is always a real <sup>.
   s=s.replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])\s*[\^]\s*[（(]?\s*([+\-−]?[0-9٠-٩۰-۹]+)\s*[)）]?/g,(_,a,b)=>hold(pow(a,b)))
      .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\b/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return hold(pow(a,[...b].map(c=>m[c]||c).join('')))});
+  // Plain fractions used by older questions/explanations: 1/2 or ١/٢.
+  // Convert only numeric fractions, not dates/URLs.
+  s=s.replace(/(^|[^A-Za-z0-9٠-٩۰-۹])([0-9٠-٩۰-۹]+)\s*\/\s*([0-9٠-٩۰-۹]+)(?![A-Za-z0-9٠-٩۰-۹/])/g,
+    (_,pre,a,b)=>pre+hold(frac(a,b)));
   s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s
  }
  window.QudratMath={render,ar};
