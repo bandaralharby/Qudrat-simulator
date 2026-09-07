@@ -31,3 +31,8 @@
 .qpow{display:inline-flex!important;direction:ltr!important;unicode-bidi:isolate!important;align-items:baseline!important;white-space:nowrap!important;vertical-align:baseline!important;gap:0!important}
 .qpow>.qbase{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:0!important}
 .qpow>.qexp{display:inline-block!important;direction:rtl!important;unicode-bidi:isolate!important;order:1!important;font-size:.60em!important;line-height:1!important;position:relative!important;top:-.72em!important;margin-left:.03em!important;margin-right:0!important}
+
+/* v93 restore the previously-correct exponent layout ONLY in choices and explanations */
+.choice .qpow,#answers .qpow,.exAnswer .qpow,.explain .qpow{direction:rtl!important;display:inline-block!important;unicode-bidi:isolate!important;white-space:nowrap!important}
+.choice .qpow>.qbase,#answers .qpow>.qbase,.exAnswer .qpow>.qbase,.explain .qpow>.qbase{display:inline-block!important;direction:rtl!important}
+.choice .qpow>.qexp,#answers .qpow>.qexp,.exAnswer .qpow>.qexp,.explain .qpow>.qexp{display:inline-block!important;direction:rtl!important;font-size:.62em!important;line-height:0!important;position:relative!important;top:-.55em!important;margin-right:.03em!important;margin-left:0!important;vertical-align:baseline!important}
