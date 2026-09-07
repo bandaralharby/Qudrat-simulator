@@ -11,7 +11,7 @@
  function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase" dir="rtl">${esc(ar(a))}</span><sup dir="ltr">${esc(ar(b))}</sup></span>`}
  function render(raw){
   let s=String(raw??''),holds=[],n=0;
-  const hold=h=>{const key=`QMATHX${String(n++).padStart(3,'0')}XEND`;holds.push([key,h]);return key};
+  const hold=h=>{const alpha=i=>{let x=i+1,o='';while(x){x--;o=String.fromCharCode(65+(x%26))+o;x=Math.floor(x/26)}return o};const key=`QMATHX${alpha(n++)}XEND`;holds.push([key,h]);return key};
   // 1) Explicit canonical tokens first.
   s=s.replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
    .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
@@ -31,7 +31,7 @@
   // 4) Normalize every standalone numeric slash fraction, including Arabic-Indic digits.
   s=s.replace(/([0-9٠-٩۰-۹]+)\s*[\/⁄]\s*([0-9٠-٩۰-۹]+)/g,(_,a,b)=>hold(frac(a,b)));
   // Escape ordinary text, convert digits, then restore protected math HTML.
-  s=ar(esc(s));holds.forEach(([k,h])=>{const ka=ar(k);s=s.split(k).join(h).split(ka).join(h)});return s
+  s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s
  }
  window.QudratMath={render,ar};
 })();
