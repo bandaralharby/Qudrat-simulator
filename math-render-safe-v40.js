@@ -1,19 +1,30 @@
-// Qudrat v60 — RTL-safe math + Arabic-Indic exponent digits.
+// Qudrat unified math renderer v80 — fractions, roots and powers.
 (function(){
- const D='٠١٢٣٤٥٦٧٨٩', supMap={'٠':'⁰','١':'¹','٢':'²','٣':'³','٤':'⁴','٥':'⁵','٦':'⁶','٧':'⁷','٨':'⁸','٩':'⁹','-':'⁻','−':'⁻','+':'⁺'}, ar=s=>String(s??'').replace(/[0-9۰-۹]/g,d=>/[0-9]/.test(d)?D[d]:D['۰۱۲۳۴۵۶۷۸۹'.indexOf(d)]);
- const sup=s=>ar(s).split('').map(c=>supMap[c]||c).join('');
+ const AR='٠١٢٣٤٥٦٧٨٩', FA='۰۱۲۳۴۵۶۷۸۹';
+ const ar=s=>String(s??'').replace(/[0-9۰-۹]/g,d=>/[0-9]/.test(d)?AR[d]:AR[FA.indexOf(d)]);
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const label=(x,y,t)=>`<text x="${x}" y="${y}" text-anchor="middle" class="qlabel">${esc(ar(t))}</text>`;
  function svg(type,a=[]){if(type==='triangle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><polygon points="150,20 45,155 255,155" class="qstroke"/>${label(70,95,a[0]||'')}${label(150,180,a[1]||'')}${label(230,95,a[2]||'')}</svg></div>`;if(type==='rect'||type==='rectangle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><rect x="45" y="30" width="210" height="120" class="qstroke"/>${label(150,180,a[0]||'')}${label(24,95,a[1]||'')}</svg></div>`;if(type==='square')return `<div class="qvisual"><svg viewBox="0 0 300 190"><rect x="70" y="15" width="160" height="160" class="qstroke"/>${label(150,188,a[0]||'')}</svg></div>`;if(type==='circle')return `<div class="qvisual"><svg viewBox="0 0 300 190"><circle cx="150" cy="92" r="70" class="qstroke"/><circle cx="150" cy="92" r="3" class="qfill"/><line x1="150" y1="92" x2="220" y2="92" class="qstroke"/>${label(185,80,a[0]||'')}</svg></div>`;return''}
- function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(String(x[1]||'').replace(/[٠-٩]/g,d=>D.indexOf(d)))||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
- function render(raw){let s=String(raw??''),holds=[];const hold=h=>{const key=`QQHOLD${String.fromCharCode(65+holds.length)}ZZ`;holds.push([key,h]);return key};
+ function chart(spec){const z=String(spec).split(',').map(x=>x.split('=')),vals=z.map(x=>Number(String(x[1]||'').replace(/[٠-٩]/g,d=>AR.indexOf(d)))||0),m=Math.max(1,...vals);return `<div class="qchart">${z.map(([k,v],i)=>`<div class="qbarRow"><span>${esc(k||'')}</span><i style="--w:${vals[i]/m*100}%"></i><b>${ar(v||'')}</b></div>`).join('')}</div>`}
+ function frac(a,b){return `<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`}
+ function sqrt(x){return `<span class="qsqrt" dir="ltr"><span>${esc(ar(x))}</span></span>`}
+ function pow(a,b){return `<span class="qpow" dir="ltr"><span class="qbase">${esc(ar(a))}</span><sup>${esc(ar(b))}</sup></span>`}
+ function render(raw){
+  let s=String(raw??''),holds=[],n=0;
+  const hold=h=>{const key=`QQMATHHOLD${n++}ZZ`;holds.push([key,h]);return key};
   s=s.replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
-      .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
-   .replace(/\{\{\s*chart\s*:\s*bar\s*:\s*([^}]+)\}\}/gi,(_,x)=>hold(chart(x)))
+   .replace(/\{\{shape:(triangle|rect|rectangle|circle|square)(?::([^}]+))?\}\}/gi,(_,t,a)=>hold(svg(t.toLowerCase(),a?a.split(':'):[])))
    .replace(/QVISUALTOKEN\s*[·.،,:-]*\s*(triangle|rect|rectangle|circle|square)?/gi,(_,t)=>hold(svg((t||'rect').toLowerCase(),[])))
-   .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qfrac" dir="ltr"><span>${esc(ar(a))}</span><span>${esc(ar(b))}</span></span>`))
-   .replace(/\{\{sqrt:([^}]+)\}\}/gi,(_,x)=>hold(`<span class="qsqrt" dir="ltr">√<span>${esc(ar(x))}</span></span>`))
-   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(`<span class="qpow" dir="ltr">${esc(ar(a))}${esc(sup(b))}</span>`));
-  s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s}
+   .replace(/\{\{frac:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(frac(a,b)))
+   .replace(/\{\{sqrt:([^}]+)\}\}/gi,(_,x)=>hold(sqrt(x)))
+   .replace(/\{\{pow:([^}:]+):([^}]+)\}\}/gi,(_,a,b)=>hold(pow(a,b)));
+  // Legacy/plain roots: √25, √(25), √س, √(س+1). Keep the radical bar over the whole radicand.
+  s=s.replace(/√\s*[（(]\s*([^()（）]{1,40}?)\s*[)）]/g,(_,x)=>hold(sqrt(x)))
+     .replace(/√\s*([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+(?:\s*[+\-−×÷]\s*[A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+)?)/g,(_,x)=>hold(sqrt(x)));
+  // Legacy/plain powers: 2^3, س^2, (س+1)^2. Exponent is always a real <sup>.
+  s=s.replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])\s*[\^]\s*[（(]?\s*([+\-−]?[0-9٠-٩۰-۹]+)\s*[)）]?/g,(_,a,b)=>hold(pow(a,b)))
+     .replace(/([A-Za-z\u0600-\u06FF0-9٠-٩۰-۹]+|[（(][^()（）]{1,30}[)）])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)\b/g,(_,a,b)=>{const m={'⁰':'٠','¹':'١','²':'٢','³':'٣','⁴':'٤','⁵':'٥','⁶':'٦','⁷':'٧','⁸':'٨','⁹':'٩'};return hold(pow(a,[...b].map(c=>m[c]||c).join('')))});
+  s=ar(esc(s));holds.forEach(([k,h])=>{s=s.split(k).join(h)});return s
+ }
  window.QudratMath={render,ar};
 })();
