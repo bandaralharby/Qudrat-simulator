@@ -10,3 +10,8 @@
 .choice .qpow,#answers .qpow,.exAnswer .qpow,.explain .qpow{direction:rtl!important;display:inline-block!important;unicode-bidi:isolate!important;white-space:nowrap!important}
 .choice .qpow .qbase,#answers .qpow .qbase,.exAnswer .qpow .qbase,.explain .qpow .qbase{display:inline-block!important}
 .choice .qpow sup,#answers .qpow sup,.exAnswer .qpow sup,.explain .qpow sup{position:relative!important;top:-.55em!important;margin-right:.03em!important;margin-left:0!important;font-size:.62em!important;line-height:0!important;vertical-align:baseline!important}
+
+/* v82 global RTL math fixes */
+.qfrac{direction:ltr!important;unicode-bidi:isolate!important;vertical-align:middle!important;min-width:1.25em!important}
+.qfrac>span:first-child{border-bottom:1.7px solid currentColor!important;padding:0 .16em .08em!important}.qfrac>span:last-child{padding:.08em .16em 0!important}
+.qpow{direction:ltr!important;unicode-bidi:isolate!important;display:inline-flex!important;align-items:flex-start!important;white-space:nowrap!important;vertical-align:baseline!important}.qpow .qbase{direction:rtl!important;unicode-bidi:isolate!important}.qpow sup{direction:ltr!important;unicode-bidi:isolate!important;position:relative!important;top:-.55em!important;margin-left:.02em!important;margin-right:0!important;font-size:.62em!important}
