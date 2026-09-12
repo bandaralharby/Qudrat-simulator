@@ -8,7 +8,7 @@
 
   async function currentAccess(){
     const {data:{session}}=await client.auth.getSession();
-    if(!session) return {loggedIn:false,active:false,session:null,subscription:null};
+    if(!session || session.user?.is_anonymous) return {loggedIn:false,active:false,session:null,subscription:null};
     const {data,error}=await client.from('subscriptions')
       .select('status,plan,starts_at,ends_at')
       .eq('user_id',session.user.id)
@@ -23,7 +23,7 @@
     const access=await currentAccess();
     if(!access.loggedIn){
       const next=encodeURIComponent(location.pathname.split('/').pop()+location.search);
-      location.replace('login.html?next='+next);
+      location.replace('login.html?reason=login&next='+next);
       return false;
     }
     if(!access.active){
