@@ -7,49 +7,39 @@
 <link rel="stylesheet" href="style.css?v=2026090418">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
+<style>#authGate{min-height:100vh;display:flex;align-items:center;justify-content:center;color:#173866;font-weight:800;background:#f3f6fa}#appContent{display:none}</style>
 </head>
 <body class="home">
+<div id="authGate">جاري التحقق من تسجيل الدخول...</div>
+<div id="appContent">
 <header class="homeTop">
   <div class="homeBrand"><strong>محاكي اختبار القدرات</strong><small>تجربة تحاكي الاختبار الفعلي</small></div>
-  <div style="display:flex;gap:10px;align-items:center"><div class="homeStatus"><span>بنك الأسئلة</span><b>500 سؤال</b></div><a id="studentAccountLink" href="login.html" style="background:#fff;color:#173866;text-decoration:none;border-radius:8px;padding:9px 13px;font-weight:800;white-space:nowrap">دخول الطلاب</a></div>
+  <div style="display:flex;gap:10px;align-items:center"><div class="homeStatus"><span>بنك الأسئلة</span><b>500 سؤال</b></div><a href="account.html" style="background:#fff;color:#173866;text-decoration:none;border-radius:8px;padding:9px 13px;font-weight:800;white-space:nowrap">حسابي</a></div>
 </header>
-
 <main class="homeShell">
   <section class="welcomeCard">
     <div class="eyebrow">اختبار القدرات العامة</div>
     <h1>اختر نوع الاختبار أو التدريب</h1>
     <p>واجهة اختبار محوسب واقعية، مع نتيجة وتصحيح وشرح الإجابات بعد إنهاء المحاولة.</p>
-
     <div class="examCards">
       <article class="examChoice primaryChoice">
-        <div class="choiceHead"><span>المحاكاة الكاملة</span><b>96 سؤال</b></div>
-        <h2>اختبار شامل</h2>
+        <div class="choiceHead"><span>المحاكاة الكاملة</span><b>96 سؤال</b></div><h2>اختبار شامل</h2>
         <div class="choiceStats"><span><b>48</b> كمي</span><span><b>48</b> لفظي</span><span><b>100</b> دقيقة</span></div>
         <a href="exam-v29.html?v=27&type=mock&total=96&minutes=100&fresh=1">ابدأ المحاكاة الكاملة</a>
       </article>
-
       <article class="examChoice">
-        <div class="choiceHead"><span>التدريب القصير</span><b>30 سؤال</b></div>
-        <h2>تدريب قصير تفاعلي</h2>
+        <div class="choiceHead"><span>التدريب القصير</span><b>30 سؤال</b></div><h2>تدريب قصير تفاعلي</h2>
         <div class="choiceStats"><span><b>30</b> سؤالًا</span><span>صفحة واحدة</span><span>تصحيح فوري</span></div>
         <a href="training.html?v=2026090710">ابدأ التدريب القصير</a>
       </article>
     </div>
-
     <a class="quickLink" href="exam-v29.html?v=27&type=mock&total=8&minutes=5&mode=devquick&fresh=1">تجربة سريعة مجانية — 8 أسئلة / 5 دقائق</a>
   </section>
-
-  <aside class="infoCard">
-    <h2>قبل البدء</h2>
-    <div class="infoRow"><i>01</i><span>أنشئ حساب طالب أو سجّل الدخول.</span></div>
-    <div class="infoRow"><i>02</i><span>المحاكاة الكاملة والتدريب القصير متاحان للمشتركين.</span></div>
-    <div class="infoRow"><i>03</i><span>بعد التسليم تظهر النتيجة والحل والشرح.</span></div>
-    <div class="bankBox"><b>500</b><span>سؤال في البنك الحالي<br>250 كمي + 250 لفظي</span></div>
-  </aside>
+  <aside class="infoCard"><h2>تفاصيل الحساب</h2><div class="infoRow"><i>01</i><span>المحاكاة الكاملة والتدريب القصير متاحان للمشتركين.</span></div><div class="infoRow"><i>02</i><span>يمكنك متابعة حالة اشتراكك من صفحة حسابي.</span></div><div class="infoRow"><i>03</i><span>بعد التسليم تظهر النتيجة والحل والشرح.</span></div><div class="bankBox"><b>500</b><span>سؤال في البنك الحالي<br>250 كمي + 250 لفظي</span></div></aside>
 </main>
 <footer style="text-align:center;padding:0 16px 24px"><a href="admin.html" style="color:#667085;text-decoration:none;font-size:13px">دخول المالك</a></footer>
+</div>
 <script>
-const homeDb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);homeDb.auth.getSession().then(({data})=>{const a=document.getElementById('studentAccountLink');if(data.session&&!data.session.user?.is_anonymous){a.href='account.html';a.textContent='حسابي'}else{a.href='login.html';a.textContent='دخول الطلاب'}});
+(async()=>{const db=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);const {data:{session}}=await db.auth.getSession();if(!session||session.user?.is_anonymous){if(session?.user?.is_anonymous)await db.auth.signOut();location.replace('login.html?next=index.html');return}document.getElementById('authGate').style.display='none';document.getElementById('appContent').style.display='block'})();
 </script>
-</body>
-</html>
+</body></html>
