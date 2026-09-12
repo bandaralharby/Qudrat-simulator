@@ -49,7 +49,7 @@
 </main>
 <footer style="text-align:center;padding:0 16px 24px"><a href="admin.html" style="color:#667085;text-decoration:none;font-size:13px">دخول المالك</a></footer>
 <script>
-const homeDb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);homeDb.auth.getSession().then(({data})=>{const a=document.getElementById('studentAccountLink');if(data.session){a.href='account.html';a.textContent='حسابي'}});
+const homeDb=supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);homeDb.auth.getSession().then(({data})=>{const a=document.getElementById('studentAccountLink');if(data.session&&!data.session.user?.is_anonymous){a.href='account.html';a.textContent='حسابي'}else{a.href='login.html';a.textContent='دخول الطلاب'}});
 </script>
 </body>
 </html>
