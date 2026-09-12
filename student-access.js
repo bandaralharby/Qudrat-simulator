@@ -1,6 +1,7 @@
 (function(){
   const {createClient}=supabase;
-  const client=createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
+  const authOptions={persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage,storageKey:'sb-lqvfvpvyzoupdyqahwjy-auth-token'};
+  const client=createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY,{auth:authOptions});
 
   function isQuickTrial(){
     return new URLSearchParams(location.search).get('mode')==='devquick';
